@@ -1,0 +1,17 @@
+# Local release archives
+*.zip
+*.7z
+*.rar
+
+# Local scratch files
+tmp/
+*.bak
+*.backup
+*.disabled-*
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~

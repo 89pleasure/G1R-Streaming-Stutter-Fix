@@ -1,0 +1,54 @@
+G1R - Streaming Stutter Fix
+Findings and tuning notes
+
+Extracted default scalability values from the packed game config:
+
+TextureQuality@0     r.Streaming.PoolSize=200
+TextureQuality@1     r.Streaming.PoolSize=300
+TextureQuality@2     r.Streaming.PoolSize=400
+TextureQuality@3     r.Streaming.PoolSize=500
+TextureQuality@Cine  r.Streaming.PoolSize=1000
+
+In the tested setup, GameUserSettings.ini used:
+
+sg.TextureQuality=4
+
+That maps to TextureQuality@Cine, so the effective default pool was only
+1000 MB. Raising it to 8192 MB and later 10240 MB on a 20 GB Radeon RX 7900 XT
+made the game feel noticeably smoother in the Swamp Camp, with fewer drops and
+less frametime instability. Observed VRAM usage around that area was about
+9.6 GB after tuning.
+
+Why Engine.ini and Scalability.ini?
+
+Engine.ini contains global console variables and shader/loading tweaks.
+Scalability.ini overrides the texture quality profiles so the game does not
+reset r.Streaming.PoolSize when it applies sg.TextureQuality.
+
+GameUserSettings.ini is intentionally not modified by this mod.
+
+What is safe to scale per GPU?
+
+Only r.Streaming.PoolSize should change between presets.
+
+The other values are conservative and can be shared across presets:
+
+r.TextureStreaming=1
+r.Streaming.LimitPoolSizeToVRAM=0
+r.Streaming.MaxTempMemoryAllowed=512
+r.Streaming.DefragDynamicBounds=1
+r.MotionBlurQuality=0
+r.ShaderPipelineCache.Enabled=1
+r.ShaderPipelineCache.StartupMode=2
+r.ShaderPipelineCache.BatchSize=64
+r.ShaderPipelineCache.BackgroundBatchSize=8
+r.ShaderPipelineCache.BatchTime=2
+r.ShaderPipelineCache.BackgroundBatchTime=1
+s.AsyncLoadingTimeLimit=5
+s.PriorityAsyncLoadingExtraTime=15
+s.LevelStreamingActorsUpdateTimeLimit=5
+s.PriorityLevelStreamingActorsUpdateExtraTime=15
+
+There is no profile above @Cine in the extracted DefaultScalability.ini.
+Using sg.*Quality=5 is not recommended. To go beyond Cine, override individual
+Cine CVars explicitly.
