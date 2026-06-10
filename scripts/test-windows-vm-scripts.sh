@@ -75,5 +75,13 @@ EOF
     || fail "Windows 11 VM should use configured secure OVMF code; output was: $output"
 }
 
+test_windows_icon_file_exists_for_tauri_build() {
+  local icon_path="$REPO_ROOT/app/src-tauri/icons/icon.ico"
+
+  [[ -s "$icon_path" ]] \
+    || fail "Tauri Windows builds require a non-empty icon file at $icon_path"
+}
+
 test_missing_optional_virtio_iso_is_not_attached
 test_windows_11_secure_boot_firmware_is_preferred
+test_windows_icon_file_exists_for_tauri_build
