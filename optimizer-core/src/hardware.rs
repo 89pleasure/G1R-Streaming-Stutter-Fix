@@ -232,7 +232,8 @@ mod windows {
                 // for this call. GetDesc1 only writes to an internal output managed by windows-rs.
                 adapter.GetDesc1()
             } {
-                let is_software = desc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE.0 != 0;
+                let software_flag = DXGI_ADAPTER_FLAG_SOFTWARE.0 as u32;
+                let is_software = desc.Flags & software_flag != 0;
                 let dedicated_vram_mb = bytes_to_mb_u32(desc.DedicatedVideoMemory as u64);
 
                 gpus.push(GpuInfo {
