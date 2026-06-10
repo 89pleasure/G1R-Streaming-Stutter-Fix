@@ -28,9 +28,9 @@ compact layout:
 
 When balanced performance is off, the installer writes the preset files as it does
 today. When balanced performance is on, the installer appends a conservative
-set of Cine scalability profile caps to the generated `Scalability.ini` content
-before writing it. Existing backups, read-only handling, and restore behavior
-remain unchanged.
+set of Overdose scalability profile caps to the generated `Scalability.ini`
+content before writing it. Existing backups, read-only handling, and restore
+behavior remain unchanged.
 
 ## Settings Policy
 

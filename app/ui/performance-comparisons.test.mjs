@@ -24,8 +24,8 @@ for (const scene of performanceComparisonScenes) {
   assert.match(scene.before.src, /^\.\/assets\/performance-comparisons\/.+\.webp$/);
   assert.match(scene.after.src, /^\.\/assets\/performance-comparisons\/.+\.webp$/);
   assert.equal(scene.thumbnail.alt, `${scene.label} comparison preview`);
-  assert.equal(scene.before.label, "Cine");
-  assert.equal(scene.after.label, "Balanced (Cine)");
+  assert.equal(scene.before.label, "Overdose");
+  assert.equal(scene.after.label, "Balanced (Overdose)");
 
   const moduleDir = path.dirname(fileURLToPath(import.meta.url));
   await access(path.join(moduleDir, scene.thumbnail.src));

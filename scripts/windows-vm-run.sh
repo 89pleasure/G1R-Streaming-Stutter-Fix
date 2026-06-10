@@ -24,7 +24,9 @@ NETWORK_DEVICE="${NETWORK_DEVICE:-e1000e}"
 ENABLE_TPM="${ENABLE_TPM:-auto}"
 SHARE_REPO="${SHARE_REPO:-1}"
 SHARE_DIR="${SHARE_DIR:-}"
-DISPLAY_BACKEND="${DISPLAY_BACKEND:-gtk}"
+DISPLAY_BACKEND="${DISPLAY_BACKEND:-gtk,zoom-to-fit=on}"
+DISPLAY_RESOLUTION="${DISPLAY_RESOLUTION:-1920x1080}"
+VIDEO_DEVICE="${VIDEO_DEVICE:-VGA}"
 OVMF_CODE="${OVMF_CODE:-}"
 OVMF_SECURE_CODE="${OVMF_SECURE_CODE:-}"
 OVMF_VARS_TEMPLATE="${OVMF_VARS_TEMPLATE:-}"
@@ -235,6 +237,17 @@ case "$ACCEL" in
   *) die "ACCEL must be kvm or tcg, got: $ACCEL" ;;
 esac
 
+if [[ ! "$DISPLAY_RESOLUTION" =~ ^[0-9]+x[0-9]+$ ]]; then
+  die "DISPLAY_RESOLUTION must use WIDTHxHEIGHT format, got: $DISPLAY_RESOLUTION"
+fi
+DISPLAY_WIDTH="${DISPLAY_RESOLUTION%x*}"
+DISPLAY_HEIGHT="${DISPLAY_RESOLUTION#*x}"
+
+case "$VIDEO_DEVICE" in
+  VGA | virtio-vga | qxl-vga) ;;
+  *) die "VIDEO_DEVICE must be VGA, virtio-vga, or qxl-vga, got: $VIDEO_DEVICE" ;;
+esac
+
 secure_boot_enabled=0
 if is_enabled "$SECURE_BOOT"; then
   secure_boot_enabled=1
@@ -261,6 +274,8 @@ Secure Boot:    $([[ "$secure_boot_enabled" == "1" ]] && echo enabled || echo di
 Disk bus:       $DISK_BUS
 Network device: $NETWORK_DEVICE
 Display:        $DISPLAY_BACKEND
+Resolution:     $DISPLAY_RESOLUTION
+Video device:   $VIDEO_DEVICE
 Install mode:   $install_mode
 Windows ISO:    ${windows_iso:-not attached}
 VirtIO ISO:     ${virtio_iso:-not attached}
@@ -299,6 +314,8 @@ qemu_args=(
   -m "$MEMORY_MB"
   -rtc base=localtime,clock=host
   -display "$DISPLAY_BACKEND"
+  -vga none
+  -fw_cfg "name=opt/org.tianocore/Resolution,string=$DISPLAY_RESOLUTION"
   -device qemu-xhci
   -device usb-tablet
   -device ich9-ahci,id=ahci
@@ -309,6 +326,12 @@ qemu_args=(
 if [[ "$secure_boot_enabled" == "1" ]]; then
   qemu_args+=(-global driver=cfi.pflash01,property=secure,value=on)
 fi
+
+video_options="$VIDEO_DEVICE,xres=$DISPLAY_WIDTH,yres=$DISPLAY_HEIGHT"
+if [[ "$VIDEO_DEVICE" == "VGA" || "$VIDEO_DEVICE" == "virtio-vga" ]]; then
+  video_options+=",edid=on"
+fi
+qemu_args+=(-device "$video_options")
 
 if [[ "$DISK_BUS" == "virtio" ]]; then
   qemu_args+=(

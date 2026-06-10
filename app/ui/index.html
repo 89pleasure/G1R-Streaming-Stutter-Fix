@@ -62,52 +62,157 @@
                   <span class="pill" id="presetCount">0 presets</span>
                 </div>
               </div>
-              <label class="feature-toggle">
-                <input id="streamingFixesToggle" type="checkbox" checked />
-                <span class="feature-copy">
-                  <span class="feature-title">Enable streaming fixes</span>
-                  <span class="feature-description">
-                    Writes the selected texture streaming pool preset to Engine.ini and
-                    Scalability.ini.
+              <div class="feature-row with-detail">
+                <label class="feature-toggle">
+                  <input id="streamingFixesToggle" type="checkbox" checked />
+                  <span class="feature-copy">
+                    <span class="feature-title">Enable streaming fixes</span>
+                    <span class="feature-description">
+                      Writes the selected texture streaming pool preset to Engine.ini and
+                      Scalability.ini.
+                    </span>
                   </span>
-                </span>
-              </label>
+                </label>
+                <div class="streaming-feature-detail">
+                  <div class="streaming-detail-heading">
+                    <span class="streaming-detail-title">Streaming pool write</span>
+                    <span class="pill">Config preset</span>
+                  </div>
+                  <p>
+                    Sets Unreal texture streaming pool values in Engine.ini and Scalability.ini to
+                    match the selected VRAM class.
+                  </p>
+                  <dl class="streaming-detail-list">
+                    <div>
+                      <dt>Goal</dt>
+                      <dd>Reduce texture streaming pressure and asset-loading stutter.</dd>
+                    </div>
+                    <div>
+                      <dt>Control</dt>
+                      <dd>The VRAM preset stays user-selected, even when hardware is detected.</dd>
+                    </div>
+                  </dl>
+                </div>
+              </div>
               <div class="preset-grid" id="presetGrid"></div>
               <div class="recommendation-summary" id="recommendationSummary">
                 Hardware recommendation unavailable.
               </div>
+              <div class="performance-experimental" aria-labelledby="experimentalStreamingHeading">
+                <div class="experimental-heading-row">
+                  <h3 id="experimentalStreamingHeading">Experimental Stutter Tests</h3>
+                  <span class="pill warn">Frame-time stability</span>
+                </div>
+                <div class="feature-row with-detail">
+                  <label class="performance-toggle experiment-toggle">
+                    <input id="d3d12PsoCacheToggle" type="checkbox" />
+                    <span class="performance-copy">
+                      <span class="performance-title">D3D12 PSO Disk Cache</span>
+                      <span class="performance-description">
+                        Enables D3D12 pipeline disk caches to reduce repeated shader pipeline hitches.
+                      </span>
+                      <span class="impact-list">
+                        <span>Engine.ini</span>
+                        <span>No FPS target</span>
+                        <span>Spike test</span>
+                      </span>
+                    </span>
+                  </label>
+                  <div class="streaming-feature-detail">
+                    <div class="streaming-detail-heading">
+                      <span class="streaming-detail-title">D3D12 pipeline cache</span>
+                      <span class="pill warn">Spike test</span>
+                    </div>
+                    <p>
+                      Enables D3D12 pipeline disk caches so repeated pipeline creation work can be
+                      reused across runs.
+                    </p>
+                    <dl class="streaming-detail-list">
+                      <div>
+                        <dt>Expected effect</dt>
+                        <dd>Targets repeated shader or pipeline hitches, not average FPS.</dd>
+                      </div>
+                      <div>
+                        <dt>Best tested</dt>
+                        <dd>Over longer play sessions because cache behavior builds over time.</dd>
+                      </div>
+                    </dl>
+                  </div>
+                </div>
+                <div class="feature-row with-detail">
+                  <label class="performance-toggle experiment-toggle">
+                    <input id="runtimePsoPrecachingToggle" type="checkbox" />
+                    <span class="performance-copy">
+                      <span class="performance-title">Runtime PSO Precaching</span>
+                      <span class="performance-description">
+                        Allows UE runtime PSO precaching and async pipeline compilation.
+                      </span>
+                      <span class="impact-list">
+                        <span>Engine.ini</span>
+                        <span>No FPS target</span>
+                        <span>Stutter test</span>
+                      </span>
+                    </span>
+                  </label>
+                  <div class="streaming-feature-detail">
+                    <div class="streaming-detail-heading">
+                      <span class="streaming-detail-title">Runtime PSO work</span>
+                      <span class="pill warn">Stutter test</span>
+                    </div>
+                    <p>
+                      Allows Unreal runtime PSO precaching and async pipeline compilation to move
+                      some pipeline work away from visible frames.
+                    </p>
+                    <dl class="streaming-detail-list">
+                      <div>
+                        <dt>Expected effect</dt>
+                        <dd>May reduce shader-related frame-time spikes.</dd>
+                      </div>
+                      <div>
+                        <dt>Preserves</dt>
+                        <dd>Image quality and average FPS target.</dd>
+                      </div>
+                    </dl>
+                  </div>
+                </div>
+                <div class="feature-row with-detail">
+                  <label class="performance-toggle experiment-toggle">
+                    <input id="gcSmoothingToggle" type="checkbox" />
+                    <span class="performance-copy">
+                      <span class="performance-title">GC Smoothing</span>
+                      <span class="performance-description">
+                        Spreads Unreal garbage collection work more gently to test frame-time spikes.
+                      </span>
+                      <span class="impact-list">
+                        <span>Engine.ini</span>
+                        <span>No FPS target</span>
+                        <span>Frame-time test</span>
+                      </span>
+                    </span>
+                  </label>
+                  <div class="streaming-feature-detail">
+                    <div class="streaming-detail-heading">
+                      <span class="streaming-detail-title">Garbage collection timing</span>
+                      <span class="pill warn">Frame-time test</span>
+                    </div>
+                    <p>
+                      Adjusts Unreal garbage collection timing and threading settings to test
+                      whether object cleanup spikes become less visible.
+                    </p>
+                    <dl class="streaming-detail-list">
+                      <div>
+                        <dt>Expected effect</dt>
+                        <dd>A stability tweak for long frame-time spikes caused by cleanup work.</dd>
+                      </div>
+                      <div>
+                        <dt>Fallback</dt>
+                        <dd>Disable it if longer sessions show worse hitching.</dd>
+                      </div>
+                    </dl>
+                  </div>
+                </div>
+              </div>
             </section>
-            <aside class="panel explanation-panel" aria-labelledby="streamingInfoHeading">
-              <div class="panel-header">
-                <h2 id="streamingInfoHeading">Streaming Optimization</h2>
-                <span class="pill">Config preset</span>
-              </div>
-              <div class="explanation-body">
-                <p>
-                  Sets the Unreal texture streaming pool to a value that matches the selected GPU
-                  memory class. The goal is smoother asset streaming without pushing the pool beyond
-                  the card's practical budget.
-                </p>
-                <dl class="explanation-list">
-                  <div>
-                    <dt>Changes</dt>
-                    <dd>Engine.ini and Scalability.ini streaming pool values.</dd>
-                  </div>
-                  <div>
-                    <dt>Optional</dt>
-                    <dd>Turn streaming fixes off if you only want Performance Tweaks.</dd>
-                  </div>
-                  <div>
-                    <dt>Recommendation</dt>
-                    <dd>Shown from detected VRAM, but the selected preset stays user-controlled.</dd>
-                  </div>
-                  <div>
-                    <dt>Safety</dt>
-                    <dd>Existing files are backed up before replacement.</dd>
-                  </div>
-                </dl>
-              </div>
-            </aside>
           </div>
         </section>
 
@@ -115,70 +220,134 @@
           <div class="layout-grid">
             <section class="panel performance-panel" aria-labelledby="performanceHeading">
               <div class="panel-header">
-                <h2 id="performanceHeading">Balanced Performance Tweaks</h2>
+                <h2 id="performanceHeading">Performance Tweaks</h2>
                 <div class="panel-actions">
                   <span class="pill" id="performanceStatus">Off</span>
-                  <span class="pill warn">Cine only</span>
                 </div>
               </div>
-              <label class="performance-toggle">
-                <input id="balancedPerformanceToggle" type="checkbox" />
-                <span class="performance-copy">
-                  <span class="performance-title">Opt-in Cine quality caps</span>
-                  <span class="performance-description">
-                    Conservative Scalability.ini tweaks for the Cine profile without disabling
-                    Lumen, Nanite or virtual shadows.
+              <div class="feature-row with-detail">
+                <label class="performance-toggle">
+                  <input id="balancedPerformanceToggle" type="checkbox" />
+                  <span class="performance-copy">
+                    <span class="performance-title">Opt-in Overdose quality caps</span>
+                    <span class="performance-description">
+                      Conservative Scalability.ini tweaks for the Overdose profile without disabling
+                      Lumen, Nanite or virtual shadows.
+                    </span>
+                    <span class="impact-list">
+                      <span>Overdose profile only</span>
+                      <span>Low visual impact</span>
+                      <span>Backed up</span>
+                    </span>
+                    <div class="feature-actions">
+                      <button
+                        class="secondary-button compact"
+                        id="openPerformanceComparisonButton"
+                        type="button"
+                      >
+                        Visual Comparison
+                      </button>
+                    </div>
                   </span>
-                  <span class="impact-list">
-                    <span>Cine profile only</span>
-                    <span>Low visual impact</span>
-                    <span>Backed up</span>
-                  </span>
-                </span>
-              </label>
-              <div class="performance-details" id="performanceOptimizationDetails">
-                <p>
-                  Adds conservative Scalability.ini caps for the Cine profile only. These tweaks are
-                  useful when the game is running the Cine scalability profile and preserve the
-                  game's core lighting and geometry features.
-                </p>
-                <dl class="explanation-list">
-                  <div>
-                    <dt>Scope</dt>
-                    <dd>Only writes Cine scalability groups such as ShadowQuality@Cine.</dd>
+                </label>
+                <div class="streaming-feature-detail">
+                  <div class="streaming-detail-heading">
+                    <span class="streaming-detail-title">Overdose profile caps</span>
+                    <span class="pill warn">Overdose only</span>
                   </div>
-                  <div>
-                    <dt>Changes</dt>
-                    <dd>Minor post-processing, reflections, and volumetric quality settings.</dd>
-                  </div>
-                  <div>
-                    <dt>Preserves</dt>
-                    <dd>Lumen, Nanite, and virtual shadows are not disabled.</dd>
-                  </div>
-                  <div>
-                    <dt>Control</dt>
-                    <dd>The toggle changes the preview first; optimization still requires Optimize.</dd>
-                  </div>
-                </dl>
-              </div>
-            </section>
-
-            <section
-              class="panel comparison-panel"
-              aria-labelledby="performanceComparisonHeading"
-            >
-              <div class="panel-header comparison-header">
-                <div>
-                  <h2 id="performanceComparisonHeading">Visual Comparison</h2>
-                  <p>Open a scene to compare Cine against Balanced (Cine).</p>
+                  <p>
+                    Applies conservative Scalability.ini caps only to the Overdose profile. The goal
+                    is higher FPS with minimal visible quality loss.
+                  </p>
+                  <dl class="streaming-detail-list">
+                    <div>
+                      <dt>Changes</dt>
+                      <dd>Shadow, reflection, volumetric and post-processing caps for Overdose.</dd>
+                    </div>
+                    <div>
+                      <dt>Preserves</dt>
+                      <dd>Lumen, Nanite and virtual shadows stay enabled.</dd>
+                    </div>
+                  </dl>
                 </div>
-                <span class="pill">FPS overlay included</span>
               </div>
-              <div
-                class="comparison-gallery"
-                id="performanceComparisonGallery"
-                aria-label="Comparison previews"
-              ></div>
+              <div class="feature-row with-detail">
+                <div class="performance-toggle fog-mode-feature">
+                  <span class="performance-copy">
+                    <span class="performance-title">Volumetric Fog</span>
+                    <span class="performance-description">
+                      Choose how aggressively Unreal volumetric fog should be optimized.
+                    </span>
+                    <fieldset
+                      class="segmented-control fog-mode-control"
+                      id="volumetricFogModeControl"
+                      aria-label="Volumetric fog mode"
+                    >
+                      <label class="fog-mode-option">
+                        <input
+                          id="volumetricFogModeNormal"
+                          type="radio"
+                          name="volumetricFogMode"
+                          value="normal"
+                          checked
+                        />
+                        <span>
+                          <span class="fog-mode-label">Default</span>
+                        </span>
+                      </label>
+                      <label class="fog-mode-option recommended">
+                        <input
+                          id="volumetricFogModeLow"
+                          type="radio"
+                          name="volumetricFogMode"
+                          value="low"
+                        />
+                        <span>
+                          <span class="fog-mode-label">Low</span>
+                          <span class="fog-mode-recommendation">Recommended</span>
+                        </span>
+                      </label>
+                      <label class="fog-mode-option">
+                        <input
+                          id="volumetricFogModeOff"
+                          type="radio"
+                          name="volumetricFogMode"
+                          value="off"
+                        />
+                        <span>
+                          <span class="fog-mode-label">Off</span>
+                        </span>
+                      </label>
+                    </fieldset>
+                    <span class="impact-list">
+                      <span>Best balance</span>
+                      <span>Visual impact</span>
+                      <span>Profile independent</span>
+                    </span>
+                  </span>
+                </div>
+                <div class="streaming-feature-detail">
+                  <div class="streaming-detail-heading">
+                    <span class="streaming-detail-title">Volumetric Fog mode</span>
+                    <span class="pill warn">Low recommended</span>
+                  </div>
+                  <p>
+                    Low keeps the effect enabled and reduces its internal resolution. Off disables
+                    volumetric fog completely and is only worth it when the small extra FPS gain is
+                    more important than atmosphere.
+                  </p>
+                  <dl class="streaming-detail-list">
+                    <div>
+                      <dt>Low</dt>
+                      <dd>Best balance: measured close to Off, with less visible quality loss.</dd>
+                    </div>
+                    <div>
+                      <dt>Off</dt>
+                      <dd>Maximum fog cut: writes r.VolumetricFog=0 with stronger visual impact.</dd>
+                    </div>
+                  </dl>
+                </div>
+              </div>
             </section>
           </div>
         </section>
@@ -371,6 +540,39 @@
       </section>
     </div>
 
+    <div class="modal-layer comparison-modal-layer" id="comparisonGalleryModal" hidden>
+      <section
+        class="modal-dialog comparison-gallery-modal-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="comparisonGalleryModalTitle"
+        aria-describedby="comparisonGalleryModalDescription"
+      >
+        <div class="modal-header comparison-modal-header">
+          <div>
+            <h2 id="comparisonGalleryModalTitle">Visual Comparison</h2>
+            <p id="comparisonGalleryModalDescription">
+              Choose a scene to compare Overdose against Balanced (Overdose).
+            </p>
+          </div>
+          <button
+            class="secondary-button compact"
+            id="comparisonGalleryModalClose"
+            type="button"
+          >
+            Close
+          </button>
+        </div>
+        <div class="comparison-gallery-modal-body">
+          <div
+            class="comparison-gallery"
+            id="performanceComparisonGallery"
+            aria-label="Comparison previews"
+          ></div>
+        </div>
+      </section>
+    </div>
+
     <div class="modal-layer comparison-modal-layer" id="comparisonModal" hidden>
       <section
         class="modal-dialog comparison-modal-dialog"
@@ -383,7 +585,7 @@
           <div>
             <h2 id="comparisonModalTitle">Visual Comparison</h2>
             <p id="comparisonModalDescription">
-              Cine versus Balanced (Cine), with the FPS overlay left visible.
+              Overdose versus Balanced (Overdose), with the FPS overlay left visible.
             </p>
           </div>
           <button
@@ -419,13 +621,13 @@
               class="comparison-label comparison-label-before"
               id="performanceComparisonBeforeLabel"
             >
-              Cine
+              Overdose
             </span>
             <span
               class="comparison-label comparison-label-after"
               id="performanceComparisonAfterLabel"
             >
-              Balanced (Cine)
+              Balanced (Overdose)
             </span>
             <input
               class="comparison-range"

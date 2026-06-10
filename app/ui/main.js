@@ -42,6 +42,7 @@ const viewsWithPreview = new Set(["optimizeStreaming", "performance", "gameTweak
 const elements = {};
 let confirmModalResolve = null;
 let confirmModalPreviousFocus = null;
+let comparisonGalleryModalPreviousFocus = null;
 let comparisonModalPreviousFocus = null;
 let resultClearTimer = null;
 
@@ -72,7 +73,17 @@ function bindElements() {
     "lockGameToggle",
     "lockScalabilityToggle",
     "balancedPerformanceToggle",
+    "volumetricFogModeControl",
+    "volumetricFogModeNormal",
+    "volumetricFogModeLow",
+    "volumetricFogModeOff",
+    "d3d12PsoCacheToggle",
+    "runtimePsoPrecachingToggle",
+    "gcSmoothingToggle",
     "performanceStatus",
+    "openPerformanceComparisonButton",
+    "comparisonGalleryModal",
+    "comparisonGalleryModalClose",
     "performanceComparisonGallery",
     "comparisonModal",
     "comparisonModalTitle",
@@ -114,6 +125,10 @@ function applyStoredPreferences() {
   state.targetDir = preferences.targetDir;
   elements.streamingFixesToggle.checked = preferences.streamingFixes;
   elements.balancedPerformanceToggle.checked = preferences.balancedPerformance;
+  setVolumetricFogMode(preferences.volumetricFogMode);
+  elements.d3d12PsoCacheToggle.checked = preferences.d3d12PsoCache;
+  elements.runtimePsoPrecachingToggle.checked = preferences.runtimePsoPrecaching;
+  elements.gcSmoothingToggle.checked = preferences.gcSmoothing;
   elements.skipIntroVideosToggle.checked = preferences.skipIntroVideos;
   elements.lockEngineToggle.checked = preferences.lockEngine;
   elements.lockGameToggle.checked = preferences.lockGame;
@@ -123,6 +138,10 @@ function applyStoredPreferences() {
 function persistUiPreferences() {
   saveUiPreferences({
     balancedPerformance: elements.balancedPerformanceToggle.checked,
+    volumetricFogMode: selectedVolumetricFogMode(),
+    d3d12PsoCache: elements.d3d12PsoCacheToggle.checked,
+    runtimePsoPrecaching: elements.runtimePsoPrecachingToggle.checked,
+    gcSmoothing: elements.gcSmoothingToggle.checked,
     skipIntroVideos: elements.skipIntroVideosToggle.checked,
     streamingFixes: elements.streamingFixesToggle.checked,
     lockEngine: elements.lockEngineToggle.checked,
@@ -151,6 +170,16 @@ function bindEvents() {
       closeConfirmModal(false);
     }
   });
+  elements.openPerformanceComparisonButton.addEventListener(
+    "click",
+    openPerformanceComparisonGalleryModal,
+  );
+  elements.comparisonGalleryModalClose.addEventListener("click", closeComparisonGalleryModal);
+  elements.comparisonGalleryModal.addEventListener("click", (event) => {
+    if (event.target === elements.comparisonGalleryModal) {
+      closeComparisonGalleryModal();
+    }
+  });
   elements.comparisonModalClose.addEventListener("click", closeComparisonModal);
   elements.comparisonModal.addEventListener("click", (event) => {
     if (event.target === elements.comparisonModal) {
@@ -164,6 +193,8 @@ function bindEvents() {
 
     if (!elements.comparisonModal.hidden) {
       closeComparisonModal();
+    } else if (!elements.comparisonGalleryModal.hidden) {
+      closeComparisonGalleryModal();
     } else if (!elements.confirmModal.hidden) {
       closeConfirmModal(false);
     }
@@ -213,6 +244,27 @@ function bindEvents() {
     renderPerformanceState();
     refreshPreview();
   });
+  for (const toggle of [
+    elements.volumetricFogModeNormal,
+    elements.volumetricFogModeLow,
+    elements.volumetricFogModeOff,
+  ]) {
+    toggle.addEventListener("change", () => {
+      persistUiPreferences();
+      renderPerformanceState();
+      refreshPreview();
+    });
+  }
+  for (const toggle of [
+    elements.d3d12PsoCacheToggle,
+    elements.runtimePsoPrecachingToggle,
+    elements.gcSmoothingToggle,
+  ]) {
+    toggle.addEventListener("change", () => {
+      persistUiPreferences();
+      refreshPreview();
+    });
+  }
   elements.performanceComparisonRange.addEventListener("input", () => {
     state.comparisonPosition = Number(elements.performanceComparisonRange.value);
     updatePerformanceComparisonPosition();
@@ -301,6 +353,7 @@ function renderPresets() {
       renderDiagnostics();
       refreshPreview();
     });
+
     elements.presetGrid.appendChild(button);
   });
 }
@@ -381,7 +434,12 @@ async function refreshPreview() {
       lockScalability: elements.lockScalabilityToggle.checked,
       streamingFixes: streamingFixesEnabled(),
       balancedPerformance: elements.balancedPerformanceToggle.checked,
+      disableVolumetricFog: selectedVolumetricFogMode() === "off",
+      lowVolumetricFog: selectedVolumetricFogMode() === "low",
       skipIntroVideos: elements.skipIntroVideosToggle.checked,
+      d3d12PsoCache: elements.d3d12PsoCacheToggle.checked,
+      runtimePsoPrecaching: elements.runtimePsoPrecachingToggle.checked,
+      gcSmoothing: elements.gcSmoothingToggle.checked,
     });
     elements.previewStatus.textContent = "Ready";
     elements.previewStatus.className = "pill good";
@@ -438,7 +496,12 @@ async function optimizeSelectedPreset() {
       lockScalability: elements.lockScalabilityToggle.checked,
       streamingFixes: streamingFixesEnabled(),
       balancedPerformance: elements.balancedPerformanceToggle.checked,
+      disableVolumetricFog: selectedVolumetricFogMode() === "off",
+      lowVolumetricFog: selectedVolumetricFogMode() === "low",
       skipIntroVideos: elements.skipIntroVideosToggle.checked,
+      d3d12PsoCache: elements.d3d12PsoCacheToggle.checked,
+      runtimePsoPrecaching: elements.runtimePsoPrecachingToggle.checked,
+      gcSmoothing: elements.gcSmoothingToggle.checked,
     });
     const fileNames = report.installed_files.map((file) => file.file_name).join(", ");
     showActionResult("success", "Success", `Installed ${fileNames}`, true);
@@ -595,7 +658,9 @@ function renderDiagnostics() {
 }
 
 function renderPerformanceState() {
-  const enabled = elements.balancedPerformanceToggle.checked;
+  const enabled =
+    elements.balancedPerformanceToggle.checked ||
+    selectedVolumetricFogMode() !== "normal";
   elements.performanceStatus.textContent = enabled ? "On" : "Off";
   elements.performanceStatus.className = enabled ? "pill warn" : "pill";
 }
@@ -619,10 +684,14 @@ function renderPerformanceComparison() {
       </span>
       <span class="comparison-thumb-meta">
         <span class="comparison-thumb-title">${escapeHtml(comparisonScene.label)}</span>
-        <span class="comparison-thumb-subtitle">Cine vs Balanced (Cine)</span>
+        <span class="comparison-thumb-subtitle">Overdose vs Balanced (Overdose)</span>
       </span>
     `;
-    button.addEventListener("click", () => openPerformanceComparisonModal(comparisonScene.id));
+    button.addEventListener("click", () => {
+      const returnFocus = comparisonGalleryModalPreviousFocus;
+      closeComparisonGalleryModal({ keepBodyOpen: true, restoreFocus: false });
+      openPerformanceComparisonModal(comparisonScene.id, returnFocus);
+    });
     elements.performanceComparisonGallery.appendChild(button);
   });
 }
@@ -631,7 +700,7 @@ function renderPerformanceComparisonModal() {
   const scene = selectedPerformanceComparisonScene();
   elements.comparisonModalTitle.textContent = scene.label;
   elements.comparisonModalDescription.textContent =
-    "Cine versus Balanced (Cine), with the FPS overlay left visible.";
+    "Overdose versus Balanced (Overdose), with the FPS overlay left visible.";
   elements.performanceComparisonBeforeImage.src = scene.before.src;
   elements.performanceComparisonBeforeImage.alt = `${scene.label} ${scene.before.label}`;
   elements.performanceComparisonAfterImage.src = scene.after.src;
@@ -642,9 +711,32 @@ function renderPerformanceComparisonModal() {
   updatePerformanceComparisonPosition();
 }
 
-function openPerformanceComparisonModal(sceneId) {
+function openPerformanceComparisonGalleryModal() {
+  comparisonGalleryModalPreviousFocus = document.activeElement;
+  elements.comparisonGalleryModal.hidden = false;
+  document.body.classList.add("modal-open");
+
+  window.requestAnimationFrame(() => {
+    elements.comparisonGalleryModalClose.focus();
+  });
+}
+
+function closeComparisonGalleryModal(options = {}) {
+  const { keepBodyOpen = false, restoreFocus = true } = options;
+  elements.comparisonGalleryModal.hidden = true;
+  if (!keepBodyOpen && elements.comparisonModal.hidden) {
+    document.body.classList.remove("modal-open");
+  }
+
+  if (restoreFocus && comparisonGalleryModalPreviousFocus instanceof HTMLElement) {
+    comparisonGalleryModalPreviousFocus.focus();
+  }
+  comparisonGalleryModalPreviousFocus = null;
+}
+
+function openPerformanceComparisonModal(sceneId, returnFocus = document.activeElement) {
   state.selectedComparisonSceneId = sceneId;
-  comparisonModalPreviousFocus = document.activeElement;
+  comparisonModalPreviousFocus = returnFocus;
   renderPerformanceComparisonModal();
   elements.comparisonModal.hidden = false;
   document.body.classList.add("modal-open");
@@ -656,7 +748,9 @@ function openPerformanceComparisonModal(sceneId) {
 
 function closeComparisonModal() {
   elements.comparisonModal.hidden = true;
-  document.body.classList.remove("modal-open");
+  if (elements.comparisonGalleryModal.hidden) {
+    document.body.classList.remove("modal-open");
+  }
 
   if (comparisonModalPreviousFocus instanceof HTMLElement) {
     comparisonModalPreviousFocus.focus();
@@ -764,7 +858,22 @@ function formatPool(value) {
 function formatTweaks(file) {
   const labels = [];
   if (file.will_apply_balanced_performance_tweaks) {
-    labels.push("Balanced (Cine)");
+    labels.push("Balanced (Overdose)");
+  }
+  if (file.will_apply_disable_volumetric_fog) {
+    labels.push("Volumetric Fog off");
+  }
+  if (file.will_apply_low_volumetric_fog) {
+    labels.push("Low Volumetric Fog");
+  }
+  if (file.will_apply_d3d12_pso_cache) {
+    labels.push("D3D12 PSO cache");
+  }
+  if (file.will_apply_runtime_pso_precaching) {
+    labels.push("Runtime PSO");
+  }
+  if (file.will_apply_gc_smoothing) {
+    labels.push("GC smoothing");
   }
   if (file.will_skip_intro_videos) {
     labels.push("Skip intro");
@@ -776,6 +885,8 @@ function emptyPreviewMessage() {
   if (
     !streamingFixesEnabled() &&
     !elements.balancedPerformanceToggle.checked &&
+    selectedVolumetricFogMode() === "normal" &&
+    !experimentalEngineTweaksEnabled() &&
     !elements.skipIntroVideosToggle.checked
   ) {
     return "No optimizer changes selected.";
@@ -786,6 +897,32 @@ function emptyPreviewMessage() {
 
 function streamingFixesEnabled() {
   return elements.streamingFixesToggle.checked;
+}
+
+function selectedVolumetricFogMode() {
+  if (elements.volumetricFogModeOff.checked) {
+    return "off";
+  }
+
+  if (elements.volumetricFogModeLow.checked) {
+    return "low";
+  }
+
+  return "normal";
+}
+
+function setVolumetricFogMode(mode) {
+  elements.volumetricFogModeOff.checked = mode === "off";
+  elements.volumetricFogModeLow.checked = mode === "low";
+  elements.volumetricFogModeNormal.checked = mode !== "off" && mode !== "low";
+}
+
+function experimentalEngineTweaksEnabled() {
+  return (
+    elements.d3d12PsoCacheToggle.checked ||
+    elements.runtimePsoPrecachingToggle.checked ||
+    elements.gcSmoothingToggle.checked
+  );
 }
 
 function recommendedBadgeMarkup() {
@@ -853,15 +990,27 @@ async function demoInvoke(command, args) {
   if (command === "preview_install") {
     const preset = samplePresets.find((item) => item.id === args.presetId) ?? samplePresets[2];
     const files = [];
-    if (args.streamingFixes) {
+    if (
+      args.streamingFixes ||
+      args.disableVolumetricFog ||
+      args.lowVolumetricFog ||
+      args.d3d12PsoCache ||
+      args.runtimePsoPrecaching ||
+      args.gcSmoothing
+    ) {
       files.push({
         file_name: "Engine.ini",
         target_exists: false,
         current_pool_mb: null,
-        preset_pool_mb: preset.pool_mb,
+        preset_pool_mb: args.streamingFixes ? preset.pool_mb : null,
         will_backup: false,
         will_set_read_only: args.lockEngine,
         will_apply_balanced_performance_tweaks: false,
+        will_apply_disable_volumetric_fog: Boolean(args.disableVolumetricFog),
+        will_apply_low_volumetric_fog: Boolean(args.lowVolumetricFog) && !args.disableVolumetricFog,
+        will_apply_d3d12_pso_cache: Boolean(args.d3d12PsoCache),
+        will_apply_runtime_pso_precaching: Boolean(args.runtimePsoPrecaching),
+        will_apply_gc_smoothing: Boolean(args.gcSmoothing),
         will_skip_intro_videos: false,
       });
     }
@@ -875,6 +1024,11 @@ async function demoInvoke(command, args) {
         will_backup: false,
         will_set_read_only: args.lockScalability,
         will_apply_balanced_performance_tweaks: args.balancedPerformance,
+        will_apply_disable_volumetric_fog: false,
+        will_apply_low_volumetric_fog: false,
+        will_apply_d3d12_pso_cache: false,
+        will_apply_runtime_pso_precaching: false,
+        will_apply_gc_smoothing: false,
         will_skip_intro_videos: false,
       });
     }
@@ -888,6 +1042,11 @@ async function demoInvoke(command, args) {
         will_backup: false,
         will_set_read_only: args.lockGame,
         will_apply_balanced_performance_tweaks: false,
+        will_apply_disable_volumetric_fog: false,
+        will_apply_low_volumetric_fog: false,
+        will_apply_d3d12_pso_cache: false,
+        will_apply_runtime_pso_precaching: false,
+        will_apply_gc_smoothing: false,
         will_skip_intro_videos: true,
       });
     }

@@ -4,7 +4,7 @@ Version: 1.0.0
 WHAT THIS MOD DOES
 
 G1R ships with very small texture streaming pools in its scalability presets.
-At Texture Quality Cine, the default pool is only 1000 MB. On GPUs with
+At Texture Quality Overdose, the default pool is only 1000 MB. On GPUs with
 8 GB, 12 GB, 16 GB, 20 GB or more VRAM, this can create unnecessary texture
 streaming pressure, pop-in and frametime drops.
 
@@ -66,9 +66,9 @@ mod. Average FPS can improve if the game was being limited by streaming
 pressure, but the primary goal is smoother gameplay.
 
 r.MotionBlurQuality=0 is included because many players disable motion blur in
-the menu, but the Cine post process profile still sets the engine-side motion
-blur quality to 4. Remove that line from Engine.ini if you want engine-side
-motion blur.
+the menu, but the engine profile behind Overdose still sets the engine-side
+motion blur quality to 4. Remove that line from Engine.ini if you want
+engine-side motion blur.
 
 No GameUserSettings.ini is included. Resolution, fullscreen mode, frame limit
 and the normal in-game quality sliders should stay under user control.

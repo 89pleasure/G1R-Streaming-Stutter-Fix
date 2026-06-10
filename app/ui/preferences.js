@@ -1,7 +1,12 @@
 const PREFERENCES_KEY = "g1r-optimizer.ui-preferences.v1";
+const VOLUMETRIC_FOG_MODES = new Set(["normal", "low", "off"]);
 
 const DEFAULT_UI_PREFERENCES = {
   balancedPerformance: false,
+  volumetricFogMode: "normal",
+  d3d12PsoCache: false,
+  runtimePsoPrecaching: false,
+  gcSmoothing: false,
   skipIntroVideos: false,
   streamingFixes: true,
   lockEngine: true,
@@ -17,6 +22,19 @@ export function loadUiPreferences(storage = window.localStorage) {
     balancedPerformance: booleanPreference(
       storedPreferences.balancedPerformance,
       DEFAULT_UI_PREFERENCES.balancedPerformance,
+    ),
+    volumetricFogMode: volumetricFogModePreference(storedPreferences),
+    d3d12PsoCache: booleanPreference(
+      storedPreferences.d3d12PsoCache,
+      DEFAULT_UI_PREFERENCES.d3d12PsoCache,
+    ),
+    runtimePsoPrecaching: booleanPreference(
+      storedPreferences.runtimePsoPrecaching,
+      DEFAULT_UI_PREFERENCES.runtimePsoPrecaching,
+    ),
+    gcSmoothing: booleanPreference(
+      storedPreferences.gcSmoothing,
+      DEFAULT_UI_PREFERENCES.gcSmoothing,
     ),
     skipIntroVideos: booleanPreference(
       storedPreferences.skipIntroVideos,
@@ -62,6 +80,19 @@ function loadUiPreferencesFromObject(preferences) {
       preferences.balancedPerformance,
       DEFAULT_UI_PREFERENCES.balancedPerformance,
     ),
+    volumetricFogMode: volumetricFogModePreference(preferences),
+    d3d12PsoCache: booleanPreference(
+      preferences.d3d12PsoCache,
+      DEFAULT_UI_PREFERENCES.d3d12PsoCache,
+    ),
+    runtimePsoPrecaching: booleanPreference(
+      preferences.runtimePsoPrecaching,
+      DEFAULT_UI_PREFERENCES.runtimePsoPrecaching,
+    ),
+    gcSmoothing: booleanPreference(
+      preferences.gcSmoothing,
+      DEFAULT_UI_PREFERENCES.gcSmoothing,
+    ),
     skipIntroVideos: booleanPreference(
       preferences.skipIntroVideos,
       DEFAULT_UI_PREFERENCES.skipIntroVideos,
@@ -100,6 +131,22 @@ function readStoredPreferences(storage) {
 
 function booleanPreference(value, fallback) {
   return typeof value === "boolean" ? value : fallback;
+}
+
+function volumetricFogModePreference(preferences) {
+  if (VOLUMETRIC_FOG_MODES.has(preferences.volumetricFogMode)) {
+    return preferences.volumetricFogMode;
+  }
+
+  if (preferences.disableVolumetricFog === true) {
+    return "off";
+  }
+
+  if (preferences.lowVolumetricFog === true) {
+    return "low";
+  }
+
+  return DEFAULT_UI_PREFERENCES.volumetricFogMode;
 }
 
 function stringPreference(value, fallback) {

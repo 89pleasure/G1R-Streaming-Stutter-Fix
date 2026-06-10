@@ -19,10 +19,11 @@ TextureQuality@0     200 MB
 TextureQuality@1     300 MB
 TextureQuality@2     400 MB
 TextureQuality@3     500 MB
-TextureQuality@Cine  1000 MB
+TextureQuality@Cine  1000 MB (Overdose in the game menu)
 ```
 
-Many users play with `sg.TextureQuality=4`, which maps to `TextureQuality@Cine`.
+Many users play with Texture Quality Overdose. Internally, that maps to
+`sg.TextureQuality=4` and `TextureQuality@Cine`.
 That means the default texture streaming pool can be only `1000 MB`, even on
 modern GPUs with much more VRAM.
 
@@ -111,10 +112,10 @@ mod. Average FPS can improve if the game was limited by streaming pressure, but
 the main goal is smoother gameplay.
 
 The desktop app includes an optional `Balanced Performance Tweaks` switch. It is
-off by default and only adds conservative `Scalability.ini` caps for the Cine
+off by default and only adds conservative `Scalability.ini` caps for the Overdose
 profile; it does not write `GameUserSettings.ini` or disable Lumen, Nanite or
-virtual shadows. The app labels this as `Cine only` because the current tweak set
-does not target the lower scalability profiles.
+virtual shadows. The app labels this as `Overdose only` because the current tweak
+set does not target the lower scalability profiles.
 
 The `Game Tweaks` page includes an optional `Skip Intro Videos` switch. It
 writes `Game.ini` to remove startup logo/legal movies from the startup loading
@@ -123,9 +124,9 @@ menu without an extra click. It does not delete, overwrite, or rename original
 video files.
 
 `r.MotionBlurQuality=0` is included because many users disable motion blur in
-the menu, while the Cine post-process profile can still set engine-side motion
-blur quality. Remove that line from `Engine.ini` if you want engine-side motion
-blur.
+the menu, while the engine profile behind Overdose can still set engine-side
+motion blur quality. Remove that line from `Engine.ini` if you want engine-side
+motion blur.
 
 No `GameUserSettings.ini` is included. Resolution, fullscreen mode, frame limit
 and normal in-game quality sliders remain under user control.

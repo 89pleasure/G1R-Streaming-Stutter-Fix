@@ -13,6 +13,40 @@ const SKIP_INTRO_VIDEOS_GAME_SETTINGS: &str = r#"
 [/Script/AsyncLoadingScreen.LoadingScreenSettings]
 StartupLoadingScreen=(MinimumLoadingScreenDisplayTime=0.000000,bAutoCompleteWhenLoadingCompletes=True,bMoviesAreSkippable=True,bWaitForManualStop=False,bAllowInEarlyStartup=False,bAllowEngineTick=False,PlaybackType=MT_LoadingLoop,MoviePaths=("LoopingEngineLoadScreen"),bShuffle=False,bSetDisplayMovieIndexManually=False,bShowWidgetOverlay=False,bShowLoadingCompleteText=False,bShowLoadingWidget=True,bUseRenderedFrameAsBackground=False,OverrideSyncIntervalForMovies=-1)
 "#;
+const D3D12_PSO_CACHE_ENGINE_SETTINGS: &str = r"
+; D3D12 PSO Disk Cache (experimental opt-in)
+[/Script/D3D12RHI.D3D12Options]
+D3D12.PSO.DiskCache=1
+D3D12.PSO.DriverOptimizedDiskCache=1
+";
+const RUNTIME_PSO_PRECACHING_ENGINE_SETTINGS: &str = r"
+; Runtime PSO Precaching (experimental opt-in)
+[SystemSettings]
+r.PSOPrecaching=1
+r.AsyncPipelineCompile=1
+";
+const GC_SMOOTHING_ENGINE_SETTINGS: &str = r"
+; GC Smoothing (experimental opt-in)
+[SystemSettings]
+gc.TimeBetweenPurgingPendingKillObjects=60.0
+gc.NumRetriesBeforeForcingGC=5
+gc.MinDesiredObjectsPerSubTask=20
+gc.AllowParallelGC=1
+gc.MultithreadedDestructionEnabled=1
+";
+const DISABLE_VOLUMETRIC_FOG_ENGINE_SETTINGS: &str = r"
+; Disable Volumetric Fog (visual impact opt-in)
+[SystemSettings]
+r.VolumetricFog=0
+";
+const LOW_VOLUMETRIC_FOG_ENGINE_SETTINGS: &str = r"
+; Low Volumetric Fog (visual impact opt-in)
+[SystemSettings]
+r.VolumetricFog=1
+r.VolumetricFog.GridPixelSize=16
+r.VolumetricFog.GridSizeZ=64
+r.VolumetricFog.HistoryMissSupersampleCount=4
+";
 const BALANCED_PERFORMANCE_SCALABILITY_SETTINGS: &str = r"
 ; Balanced Performance Tweaks (opt-in)
 [ShadowQuality@Cine]
@@ -81,7 +115,26 @@ pub struct InstallOptions {
     pub lock_scalability_ini: bool,
     pub apply_streaming_fixes: bool,
     pub apply_balanced_performance_tweaks: bool,
+    pub apply_disable_volumetric_fog: bool,
+    pub apply_low_volumetric_fog: bool,
     pub apply_skip_intro_videos: bool,
+    pub apply_d3d12_pso_cache: bool,
+    pub apply_runtime_pso_precaching: bool,
+    pub apply_gc_smoothing: bool,
+}
+
+impl InstallOptions {
+    fn applies_engine_tweaks(self) -> bool {
+        self.apply_disable_volumetric_fog
+            || self.applies_low_volumetric_fog()
+            || self.apply_d3d12_pso_cache
+            || self.apply_runtime_pso_precaching
+            || self.apply_gc_smoothing
+    }
+
+    fn applies_low_volumetric_fog(self) -> bool {
+        self.apply_low_volumetric_fog && !self.apply_disable_volumetric_fog
+    }
 }
 
 struct PlannedFile {
@@ -89,6 +142,11 @@ struct PlannedFile {
     content: String,
     read_only: bool,
     applies_balanced_performance_tweaks: bool,
+    applies_disable_volumetric_fog: bool,
+    applies_low_volumetric_fog: bool,
+    applies_d3d12_pso_cache: bool,
+    applies_runtime_pso_precaching: bool,
+    applies_gc_smoothing: bool,
     skips_intro_videos: bool,
 }
 
@@ -101,6 +159,11 @@ pub struct FilePreview {
     pub will_backup: bool,
     pub will_set_read_only: bool,
     pub will_apply_balanced_performance_tweaks: bool,
+    pub will_apply_disable_volumetric_fog: bool,
+    pub will_apply_low_volumetric_fog: bool,
+    pub will_apply_d3d12_pso_cache: bool,
+    pub will_apply_runtime_pso_precaching: bool,
+    pub will_apply_gc_smoothing: bool,
     pub will_skip_intro_videos: bool,
 }
 
@@ -158,6 +221,11 @@ pub fn preview_install(
                 file.file_name,
                 file.read_only,
                 file.applies_balanced_performance_tweaks,
+                file.applies_disable_volumetric_fog,
+                file.applies_low_volumetric_fog,
+                file.applies_d3d12_pso_cache,
+                file.applies_runtime_pso_precaching,
+                file.applies_gc_smoothing,
                 file.skips_intro_videos,
             )
         })
@@ -336,12 +404,23 @@ fn read_preset_content(preset_file: &Path) -> CoreResult<String> {
 fn planned_files(preset: &Preset, options: InstallOptions) -> CoreResult<Vec<PlannedFile>> {
     let mut files = Vec::new();
 
-    if options.apply_streaming_fixes {
+    if options.apply_streaming_fixes || options.applies_engine_tweaks() {
+        let engine_content = if options.apply_streaming_fixes {
+            read_preset_content(&preset.engine_ini)?
+        } else {
+            String::new()
+        };
+        let engine_content = engine_ini_content_with_options(&engine_content, options);
         files.push(PlannedFile {
             file_name: "Engine.ini",
-            content: read_preset_content(&preset.engine_ini)?,
+            content: engine_content,
             read_only: options.lock_engine_ini,
             applies_balanced_performance_tweaks: false,
+            applies_disable_volumetric_fog: options.apply_disable_volumetric_fog,
+            applies_low_volumetric_fog: options.applies_low_volumetric_fog(),
+            applies_d3d12_pso_cache: options.apply_d3d12_pso_cache,
+            applies_runtime_pso_precaching: options.apply_runtime_pso_precaching,
+            applies_gc_smoothing: options.apply_gc_smoothing,
             skips_intro_videos: false,
         });
     }
@@ -360,6 +439,11 @@ fn planned_files(preset: &Preset, options: InstallOptions) -> CoreResult<Vec<Pla
             content: scalability_content,
             read_only: options.lock_scalability_ini,
             applies_balanced_performance_tweaks: options.apply_balanced_performance_tweaks,
+            applies_disable_volumetric_fog: false,
+            applies_low_volumetric_fog: false,
+            applies_d3d12_pso_cache: false,
+            applies_runtime_pso_precaching: false,
+            applies_gc_smoothing: false,
             skips_intro_videos: false,
         });
     }
@@ -370,11 +454,51 @@ fn planned_files(preset: &Preset, options: InstallOptions) -> CoreResult<Vec<Pla
             content: game_ini_content_with_options(options),
             read_only: options.lock_game_ini,
             applies_balanced_performance_tweaks: false,
+            applies_disable_volumetric_fog: false,
+            applies_low_volumetric_fog: false,
+            applies_d3d12_pso_cache: false,
+            applies_runtime_pso_precaching: false,
+            applies_gc_smoothing: false,
             skips_intro_videos: true,
         });
     }
 
     Ok(files)
+}
+
+fn engine_ini_content_with_options(content: &str, options: InstallOptions) -> String {
+    let mut content = content.trim_end().to_string();
+
+    for settings in [
+        (
+            options.apply_disable_volumetric_fog,
+            DISABLE_VOLUMETRIC_FOG_ENGINE_SETTINGS,
+        ),
+        (
+            options.applies_low_volumetric_fog(),
+            LOW_VOLUMETRIC_FOG_ENGINE_SETTINGS,
+        ),
+        (
+            options.apply_d3d12_pso_cache,
+            D3D12_PSO_CACHE_ENGINE_SETTINGS,
+        ),
+        (
+            options.apply_runtime_pso_precaching,
+            RUNTIME_PSO_PRECACHING_ENGINE_SETTINGS,
+        ),
+        (options.apply_gc_smoothing, GC_SMOOTHING_ENGINE_SETTINGS),
+    ] {
+        if !settings.0 {
+            continue;
+        }
+
+        if !content.is_empty() {
+            content.push_str("\n\n");
+        }
+        content.push_str(settings.1.trim_start());
+    }
+
+    content
 }
 
 fn scalability_ini_content_with_options(content: &str, options: InstallOptions) -> String {
@@ -404,6 +528,11 @@ fn preview_file_content(
     file_name: &str,
     will_set_read_only: bool,
     will_apply_balanced_performance_tweaks: bool,
+    will_apply_disable_volumetric_fog: bool,
+    will_apply_low_volumetric_fog: bool,
+    will_apply_d3d12_pso_cache: bool,
+    will_apply_runtime_pso_precaching: bool,
+    will_apply_gc_smoothing: bool,
     will_skip_intro_videos: bool,
 ) -> CoreResult<FilePreview> {
     let target_exists = target_file.is_file();
@@ -423,6 +552,11 @@ fn preview_file_content(
         will_backup: target_exists,
         will_set_read_only,
         will_apply_balanced_performance_tweaks,
+        will_apply_disable_volumetric_fog,
+        will_apply_low_volumetric_fog,
+        will_apply_d3d12_pso_cache,
+        will_apply_runtime_pso_precaching,
+        will_apply_gc_smoothing,
         will_skip_intro_videos,
     })
 }
@@ -607,7 +741,12 @@ mod tests {
                 lock_scalability_ini: false,
                 apply_streaming_fixes: true,
                 apply_balanced_performance_tweaks: false,
+                apply_disable_volumetric_fog: false,
+                apply_low_volumetric_fog: false,
                 apply_skip_intro_videos: false,
+                apply_d3d12_pso_cache: false,
+                apply_runtime_pso_precaching: false,
+                apply_gc_smoothing: false,
             },
         )
         .unwrap();
@@ -625,7 +764,12 @@ mod tests {
                 lock_scalability_ini: false,
                 apply_streaming_fixes: true,
                 apply_balanced_performance_tweaks: false,
+                apply_disable_volumetric_fog: false,
+                apply_low_volumetric_fog: false,
                 apply_skip_intro_videos: false,
+                apply_d3d12_pso_cache: false,
+                apply_runtime_pso_precaching: false,
+                apply_gc_smoothing: false,
             },
         )
         .unwrap();
@@ -668,7 +812,12 @@ mod tests {
                 lock_scalability_ini: true,
                 apply_streaming_fixes: true,
                 apply_balanced_performance_tweaks: true,
+                apply_disable_volumetric_fog: false,
+                apply_low_volumetric_fog: false,
                 apply_skip_intro_videos: false,
+                apply_d3d12_pso_cache: false,
+                apply_runtime_pso_precaching: false,
+                apply_gc_smoothing: false,
             },
         )
         .unwrap();
@@ -685,7 +834,12 @@ mod tests {
                 lock_scalability_ini: false,
                 apply_streaming_fixes: true,
                 apply_balanced_performance_tweaks: true,
+                apply_disable_volumetric_fog: false,
+                apply_low_volumetric_fog: false,
                 apply_skip_intro_videos: false,
+                apply_d3d12_pso_cache: false,
+                apply_runtime_pso_precaching: false,
+                apply_gc_smoothing: false,
             },
         )
         .unwrap();
@@ -730,7 +884,12 @@ mod tests {
                 lock_scalability_ini: false,
                 apply_streaming_fixes: false,
                 apply_balanced_performance_tweaks: true,
+                apply_disable_volumetric_fog: false,
+                apply_low_volumetric_fog: false,
                 apply_skip_intro_videos: false,
+                apply_d3d12_pso_cache: false,
+                apply_runtime_pso_precaching: false,
+                apply_gc_smoothing: false,
             },
         )
         .unwrap();
@@ -750,7 +909,12 @@ mod tests {
                 lock_scalability_ini: false,
                 apply_streaming_fixes: false,
                 apply_balanced_performance_tweaks: true,
+                apply_disable_volumetric_fog: false,
+                apply_low_volumetric_fog: false,
                 apply_skip_intro_videos: false,
+                apply_d3d12_pso_cache: false,
+                apply_runtime_pso_precaching: false,
+                apply_gc_smoothing: false,
             },
         )
         .unwrap();
@@ -762,6 +926,233 @@ mod tests {
         assert!(scalability_ini.contains("; Balanced Performance Tweaks (opt-in)"));
         assert!(scalability_ini.contains("r.Lumen.TraceMeshSDFs.Allow=1"));
         assert!(!scalability_ini.contains("r.Streaming.PoolSize"));
+
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn can_apply_experimental_engine_tweaks_separately() {
+        let root = test_dir("experimental_engine_tweaks");
+        let presets_root = root.join("Presets");
+        let preset_dir = presets_root.join("08GB_VRAM_4096MB");
+        fs::create_dir_all(&preset_dir).unwrap();
+        write_file(
+            &preset_dir.join("Engine.ini"),
+            "[SystemSettings]\nr.Streaming.PoolSize=4096\n",
+        );
+        write_file(
+            &preset_dir.join("Scalability.ini"),
+            "[TextureQuality@Cine]\nr.Streaming.PoolSize=4096\n",
+        );
+
+        let target_dir = root.join("Config").join("Windows");
+        let preview = preview_install(
+            &presets_root,
+            "08GB_VRAM_4096MB",
+            &target_dir,
+            InstallOptions {
+                lock_engine_ini: true,
+                lock_game_ini: false,
+                lock_scalability_ini: false,
+                apply_streaming_fixes: false,
+                apply_balanced_performance_tweaks: false,
+                apply_disable_volumetric_fog: false,
+                apply_low_volumetric_fog: false,
+                apply_skip_intro_videos: false,
+                apply_d3d12_pso_cache: true,
+                apply_runtime_pso_precaching: false,
+                apply_gc_smoothing: true,
+            },
+        )
+        .unwrap();
+
+        assert_eq!(preview.len(), 1);
+        assert_eq!(preview[0].file_name, "Engine.ini");
+        assert_eq!(preview[0].preset_pool_mb, None);
+        assert!(preview[0].will_set_read_only);
+        assert!(preview[0].will_apply_d3d12_pso_cache);
+        assert!(!preview[0].will_apply_runtime_pso_precaching);
+        assert!(preview[0].will_apply_gc_smoothing);
+
+        install_preset(
+            &presets_root,
+            "08GB_VRAM_4096MB",
+            &target_dir,
+            InstallOptions {
+                lock_engine_ini: false,
+                lock_game_ini: false,
+                lock_scalability_ini: false,
+                apply_streaming_fixes: false,
+                apply_balanced_performance_tweaks: false,
+                apply_disable_volumetric_fog: false,
+                apply_low_volumetric_fog: false,
+                apply_skip_intro_videos: false,
+                apply_d3d12_pso_cache: true,
+                apply_runtime_pso_precaching: true,
+                apply_gc_smoothing: true,
+            },
+        )
+        .unwrap();
+
+        assert!(target_dir.join("Engine.ini").is_file());
+        assert!(!target_dir.join("Scalability.ini").exists());
+        let engine_ini = fs::read_to_string(target_dir.join("Engine.ini")).unwrap();
+        assert!(engine_ini.contains("; D3D12 PSO Disk Cache (experimental opt-in)"));
+        assert!(engine_ini.contains("D3D12.PSO.DiskCache=1"));
+        assert!(engine_ini.contains("; Runtime PSO Precaching (experimental opt-in)"));
+        assert!(engine_ini.contains("r.PSOPrecaching=1"));
+        assert!(engine_ini.contains("; GC Smoothing (experimental opt-in)"));
+        assert!(engine_ini.contains("gc.AllowParallelGC=1"));
+        assert!(!engine_ini.contains("r.Streaming.PoolSize"));
+
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn can_disable_volumetric_fog_without_streaming_fixes() {
+        let root = test_dir("disable_volumetric_fog");
+        let presets_root = root.join("Presets");
+        let preset_dir = presets_root.join("08GB_VRAM_4096MB");
+        fs::create_dir_all(&preset_dir).unwrap();
+        write_file(
+            &preset_dir.join("Engine.ini"),
+            "[SystemSettings]\nr.Streaming.PoolSize=4096\n",
+        );
+        write_file(
+            &preset_dir.join("Scalability.ini"),
+            "[TextureQuality@Cine]\nr.Streaming.PoolSize=4096\n",
+        );
+
+        let target_dir = root.join("Config").join("Windows");
+        let preview = preview_install(
+            &presets_root,
+            "08GB_VRAM_4096MB",
+            &target_dir,
+            InstallOptions {
+                lock_engine_ini: true,
+                lock_game_ini: false,
+                lock_scalability_ini: false,
+                apply_streaming_fixes: false,
+                apply_balanced_performance_tweaks: false,
+                apply_disable_volumetric_fog: true,
+                apply_low_volumetric_fog: false,
+                apply_skip_intro_videos: false,
+                apply_d3d12_pso_cache: false,
+                apply_runtime_pso_precaching: false,
+                apply_gc_smoothing: false,
+            },
+        )
+        .unwrap();
+
+        assert_eq!(preview.len(), 1);
+        assert_eq!(preview[0].file_name, "Engine.ini");
+        assert_eq!(preview[0].preset_pool_mb, None);
+        assert!(preview[0].will_set_read_only);
+        assert!(preview[0].will_apply_disable_volumetric_fog);
+
+        install_preset(
+            &presets_root,
+            "08GB_VRAM_4096MB",
+            &target_dir,
+            InstallOptions {
+                lock_engine_ini: false,
+                lock_game_ini: false,
+                lock_scalability_ini: false,
+                apply_streaming_fixes: false,
+                apply_balanced_performance_tweaks: false,
+                apply_disable_volumetric_fog: true,
+                apply_low_volumetric_fog: false,
+                apply_skip_intro_videos: false,
+                apply_d3d12_pso_cache: false,
+                apply_runtime_pso_precaching: false,
+                apply_gc_smoothing: false,
+            },
+        )
+        .unwrap();
+
+        assert!(target_dir.join("Engine.ini").is_file());
+        assert!(!target_dir.join("Scalability.ini").exists());
+        let engine_ini = fs::read_to_string(target_dir.join("Engine.ini")).unwrap();
+        assert!(engine_ini.contains("; Disable Volumetric Fog (visual impact opt-in)"));
+        assert!(engine_ini.contains("[SystemSettings]"));
+        assert!(engine_ini.contains("r.VolumetricFog=0"));
+        assert!(!engine_ini.contains("r.Streaming.PoolSize"));
+
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn can_apply_low_volumetric_fog_without_streaming_fixes() {
+        let root = test_dir("low_volumetric_fog_without_streaming");
+        let presets_root = root.join("Presets");
+        let preset_dir = presets_root.join("08GB_VRAM_4096MB");
+        fs::create_dir_all(&preset_dir).unwrap();
+        write_file(
+            &preset_dir.join("Engine.ini"),
+            "[SystemSettings]\nr.Streaming.PoolSize=4096\n",
+        );
+        write_file(
+            &preset_dir.join("Scalability.ini"),
+            "[TextureQuality@Cine]\nr.Streaming.PoolSize=4096\n",
+        );
+
+        let target_dir = root.join("Config").join("Windows");
+        let preview = preview_install(
+            &presets_root,
+            "08GB_VRAM_4096MB",
+            &target_dir,
+            InstallOptions {
+                lock_engine_ini: true,
+                lock_game_ini: false,
+                lock_scalability_ini: false,
+                apply_streaming_fixes: false,
+                apply_balanced_performance_tweaks: false,
+                apply_disable_volumetric_fog: false,
+                apply_low_volumetric_fog: true,
+                apply_skip_intro_videos: false,
+                apply_d3d12_pso_cache: false,
+                apply_runtime_pso_precaching: false,
+                apply_gc_smoothing: false,
+            },
+        )
+        .unwrap();
+
+        assert_eq!(preview.len(), 1);
+        assert_eq!(preview[0].file_name, "Engine.ini");
+        assert_eq!(preview[0].preset_pool_mb, None);
+        assert!(preview[0].will_set_read_only);
+        assert!(preview[0].will_apply_low_volumetric_fog);
+
+        install_preset(
+            &presets_root,
+            "08GB_VRAM_4096MB",
+            &target_dir,
+            InstallOptions {
+                lock_engine_ini: false,
+                lock_game_ini: false,
+                lock_scalability_ini: false,
+                apply_streaming_fixes: false,
+                apply_balanced_performance_tweaks: false,
+                apply_disable_volumetric_fog: false,
+                apply_low_volumetric_fog: true,
+                apply_skip_intro_videos: false,
+                apply_d3d12_pso_cache: false,
+                apply_runtime_pso_precaching: false,
+                apply_gc_smoothing: false,
+            },
+        )
+        .unwrap();
+
+        assert!(target_dir.join("Engine.ini").is_file());
+        assert!(!target_dir.join("Scalability.ini").exists());
+        let engine_ini = fs::read_to_string(target_dir.join("Engine.ini")).unwrap();
+        assert!(engine_ini.contains("; Low Volumetric Fog (visual impact opt-in)"));
+        assert!(engine_ini.contains("[SystemSettings]"));
+        assert!(engine_ini.contains("r.VolumetricFog=1"));
+        assert!(engine_ini.contains("r.VolumetricFog.GridPixelSize=16"));
+        assert!(engine_ini.contains("r.VolumetricFog.GridSizeZ=64"));
+        assert!(engine_ini.contains("r.VolumetricFog.HistoryMissSupersampleCount=4"));
+        assert!(!engine_ini.contains("r.Streaming.PoolSize"));
 
         fs::remove_dir_all(root).unwrap();
     }
@@ -792,7 +1183,12 @@ mod tests {
                 lock_scalability_ini: false,
                 apply_streaming_fixes: false,
                 apply_balanced_performance_tweaks: false,
+                apply_disable_volumetric_fog: false,
+                apply_low_volumetric_fog: false,
                 apply_skip_intro_videos: true,
+                apply_d3d12_pso_cache: false,
+                apply_runtime_pso_precaching: false,
+                apply_gc_smoothing: false,
             },
         )
         .unwrap();
@@ -813,7 +1209,12 @@ mod tests {
                 lock_scalability_ini: false,
                 apply_streaming_fixes: false,
                 apply_balanced_performance_tweaks: false,
+                apply_disable_volumetric_fog: false,
+                apply_low_volumetric_fog: false,
                 apply_skip_intro_videos: true,
+                apply_d3d12_pso_cache: false,
+                apply_runtime_pso_precaching: false,
+                apply_gc_smoothing: false,
             },
         )
         .unwrap();

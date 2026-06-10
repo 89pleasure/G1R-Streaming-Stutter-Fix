@@ -18,6 +18,10 @@ function createMemoryStorage() {
   const preferences = loadUiPreferences(storage);
 
   assert.equal(preferences.balancedPerformance, false);
+  assert.equal(preferences.volumetricFogMode, "normal");
+  assert.equal(preferences.d3d12PsoCache, false);
+  assert.equal(preferences.runtimePsoPrecaching, false);
+  assert.equal(preferences.gcSmoothing, false);
   assert.equal(preferences.skipIntroVideos, false);
   assert.equal(preferences.streamingFixes, true);
   assert.equal(preferences.lockEngine, true);
@@ -31,6 +35,10 @@ function createMemoryStorage() {
   saveUiPreferences(
     {
       balancedPerformance: true,
+      volumetricFogMode: "off",
+      d3d12PsoCache: true,
+      runtimePsoPrecaching: false,
+      gcSmoothing: true,
       skipIntroVideos: true,
       streamingFixes: false,
       lockEngine: false,
@@ -44,6 +52,10 @@ function createMemoryStorage() {
 
   assert.deepEqual(loadUiPreferences(storage), {
     balancedPerformance: true,
+    volumetricFogMode: "off",
+    d3d12PsoCache: true,
+    runtimePsoPrecaching: false,
+    gcSmoothing: true,
     skipIntroVideos: true,
     streamingFixes: false,
     lockEngine: false,
@@ -59,4 +71,34 @@ function createMemoryStorage() {
   storage.setItem("g1r-optimizer.ui-preferences.v1", "{not valid json");
 
   assert.equal(loadUiPreferences(storage).balancedPerformance, false);
+}
+
+{
+  const storage = createMemoryStorage();
+  storage.setItem(
+    "g1r-optimizer.ui-preferences.v1",
+    JSON.stringify({ disableVolumetricFog: true, lowVolumetricFog: true }),
+  );
+
+  assert.equal(loadUiPreferences(storage).volumetricFogMode, "off");
+}
+
+{
+  const storage = createMemoryStorage();
+  storage.setItem(
+    "g1r-optimizer.ui-preferences.v1",
+    JSON.stringify({ lowVolumetricFog: true }),
+  );
+
+  assert.equal(loadUiPreferences(storage).volumetricFogMode, "low");
+}
+
+{
+  const storage = createMemoryStorage();
+  storage.setItem(
+    "g1r-optimizer.ui-preferences.v1",
+    JSON.stringify({ volumetricFogMode: "unsupported" }),
+  );
+
+  assert.equal(loadUiPreferences(storage).volumetricFogMode, "normal");
 }

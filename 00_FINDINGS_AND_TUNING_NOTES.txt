@@ -7,17 +7,17 @@ TextureQuality@0     r.Streaming.PoolSize=200
 TextureQuality@1     r.Streaming.PoolSize=300
 TextureQuality@2     r.Streaming.PoolSize=400
 TextureQuality@3     r.Streaming.PoolSize=500
-TextureQuality@Cine  r.Streaming.PoolSize=1000
+TextureQuality@Cine  r.Streaming.PoolSize=1000 (Overdose in the game menu)
 
 In the tested setup, GameUserSettings.ini used:
 
 sg.TextureQuality=4
 
-That maps to TextureQuality@Cine, so the effective default pool was only
-1000 MB. Raising it to 8192 MB and later 10240 MB on a 20 GB Radeon RX 7900 XT
-made the game feel noticeably smoother in the Swamp Camp, with fewer drops and
-less frametime instability. Observed VRAM usage around that area was about
-9.6 GB after tuning.
+That maps to TextureQuality@Cine, the engine-internal profile behind Overdose,
+so the effective default pool was only 1000 MB. Raising it to 8192 MB and later
+10240 MB on a 20 GB Radeon RX 7900 XT made the game feel noticeably smoother in
+the Swamp Camp, with fewer drops and less frametime instability. Observed VRAM
+usage around that area was about 9.6 GB after tuning.
 
 Why Engine.ini and Scalability.ini?
 
@@ -50,5 +50,5 @@ s.LevelStreamingActorsUpdateTimeLimit=5
 s.PriorityLevelStreamingActorsUpdateExtraTime=15
 
 There is no profile above @Cine in the extracted DefaultScalability.ini.
-Using sg.*Quality=5 is not recommended. To go beyond Cine, override individual
-Cine CVars explicitly.
+Using sg.*Quality=5 is not recommended. To go beyond Overdose, override
+individual @Cine CVars explicitly.

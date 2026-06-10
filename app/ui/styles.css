@@ -166,6 +166,7 @@ button {
 
 h1,
 h2,
+h3,
 p {
   margin: 0;
 }
@@ -177,6 +178,11 @@ h1 {
 
 h2 {
   font-size: 1.05rem;
+  line-height: 1.25;
+}
+
+h3 {
+  font-size: 0.95rem;
   line-height: 1.25;
 }
 
@@ -197,6 +203,7 @@ h2 {
   align-items: start;
   gap: 18px;
   overflow: auto;
+  scrollbar-gutter: stable;
 }
 
 .layout-grid {
@@ -204,6 +211,10 @@ h2 {
   grid-template-columns: minmax(0, 3fr) minmax(280px, 2fr);
   align-items: start;
   gap: 18px;
+}
+
+#optimizeStreamingView > .layout-grid {
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .panel {
@@ -242,18 +253,19 @@ h2 {
 
 .preset-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 10px;
-  padding: 18px;
+  grid-template-columns: repeat(auto-fill, minmax(128px, 1fr));
+  gap: 8px;
+  padding: 16px 18px;
 }
 
 .preset-option {
   display: grid;
   gap: 4px;
-  min-height: 76px;
+  width: 100%;
+  min-height: 62px;
   border: 1px solid #d8e0e7;
   border-radius: 8px;
-  padding: 12px;
+  padding: 10px 11px;
   background: #ffffff;
   color: #24272b;
   text-align: left;
@@ -288,14 +300,14 @@ h2 {
 }
 
 .preset-vram {
-  font-size: 1.15rem;
+  font-size: 1.04rem;
   font-weight: 800;
   white-space: nowrap;
 }
 
 .preset-pool {
   color: #5f6870;
-  font-size: 0.9rem;
+  font-size: 0.84rem;
 }
 
 .recommended-badge {
@@ -399,8 +411,34 @@ input[type="text"]:focus {
   color: #2c3136;
 }
 
+.feature-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  border-bottom: 1px solid #edf0f2;
+}
+
+.feature-row.with-detail {
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 0.85fr);
+  column-gap: 18px;
+}
+
 .feature-toggle {
   border-bottom: 1px solid #edf0f2;
+}
+
+.feature-row > .feature-toggle,
+.feature-row > .performance-toggle {
+  border-bottom: 0;
+}
+
+.feature-row > .experiment-toggle {
+  border-top: 0;
+}
+
+.fog-mode-feature {
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .feature-toggle input,
@@ -409,6 +447,82 @@ input[type="text"]:focus {
   height: 20px;
   margin-top: 2px;
   accent-color: #2c8f6d;
+}
+
+.segmented-control {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+  width: min(100%, 360px);
+  border: 1px solid #d8e0e7;
+  border-radius: 8px;
+  padding: 4px;
+  background: #eef2f5;
+}
+
+.segmented-control label {
+  position: relative;
+  min-width: 0;
+}
+
+.segmented-control input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.segmented-control > label > span {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: 42px;
+  border-radius: 6px;
+  padding: 4px 10px;
+  color: #4f5963;
+  font-size: 0.86rem;
+  font-weight: 800;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.segmented-control label.recommended > span {
+  color: #1d7658;
+  box-shadow: inset 0 0 0 1px #2c8f6d;
+}
+
+.fog-mode-label {
+  line-height: 1.1;
+}
+
+.fog-mode-recommendation {
+  color: #1d7658;
+  font-size: 0.66rem;
+  font-weight: 900;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.segmented-control input:checked + span {
+  background: #ffffff;
+  color: #1d7658;
+  box-shadow: 0 1px 3px rgba(18, 31, 45, 0.12);
+}
+
+.segmented-control label.recommended input:checked + span {
+  box-shadow:
+    inset 0 0 0 1px #2c8f6d,
+    0 1px 3px rgba(18, 31, 45, 0.12);
+}
+
+.segmented-control input:focus-visible + span {
+  outline: 2px solid #2c8f6d;
+  outline-offset: 2px;
 }
 
 .feature-copy,
@@ -429,13 +543,90 @@ input[type="text"]:focus {
   line-height: 1.4;
 }
 
-.performance-details {
-  display: grid;
-  gap: 16px;
+.feature-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.performance-experimental {
   border-top: 1px solid #edf0f2;
-  padding: 18px;
+}
+
+.experimental-heading-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 18px 0;
+}
+
+.experiment-toggle {
+  border-top: 1px solid #edf0f2;
+  padding-block: 14px;
+}
+
+.experimental-heading-row + .experiment-toggle {
+  border-top: 0;
+}
+
+.performance-experimental .feature-row {
+  border-top: 1px solid #edf0f2;
+  border-bottom: 0;
+}
+
+.experimental-heading-row + .feature-row {
+  border-top: 0;
+}
+
+.streaming-feature-detail {
+  display: grid;
+  gap: 10px;
+  align-self: stretch;
+  margin: 12px 18px 12px 0;
+  border-left: 1px solid #dce4ea;
+  padding: 2px 0 2px 18px;
   color: #4d5964;
-  line-height: 1.45;
+  line-height: 1.42;
+}
+
+.streaming-detail-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.streaming-detail-title {
+  color: #24272b;
+  font-weight: 800;
+}
+
+.streaming-feature-detail p {
+  font-size: 0.92rem;
+}
+
+.streaming-detail-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 16px;
+  margin: 0;
+}
+
+.streaming-detail-list div {
+  display: grid;
+  gap: 3px;
+}
+
+.streaming-detail-list dt {
+  color: #24272b;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.streaming-detail-list dd {
+  margin: 0;
+  font-size: 0.86rem;
 }
 
 .preset-panel.streaming-disabled .preset-grid,
@@ -463,43 +654,36 @@ input[type="text"]:focus {
 }
 
 #performanceView > .layout-grid {
+  grid-template-columns: minmax(0, 1fr);
   min-height: 0;
   height: 100%;
   align-items: stretch;
-}
-
-#performanceView .performance-panel {
-  align-self: start;
-}
-
-.comparison-panel {
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
-  min-height: 0;
   overflow: hidden;
 }
 
-#performanceView .comparison-panel {
+#performanceView.view.active {
+  align-content: stretch;
+  align-items: stretch;
+  overflow: hidden;
+}
+
+#performanceView .performance-panel {
   align-self: stretch;
-}
-
-.comparison-header {
-  align-items: start;
-}
-
-.comparison-header p {
-  margin-top: 4px;
-  color: #616a72;
-  font-size: 0.9rem;
+  min-height: 0;
+  max-height: 100%;
+  overflow: auto;
+  scrollbar-gutter: stable;
 }
 
 .comparison-gallery {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 14px;
   min-height: 0;
+  max-height: min(68vh, 700px);
   overflow: auto;
   padding: 18px;
+  scrollbar-gutter: stable;
 }
 
 .comparison-thumb {
@@ -648,6 +832,13 @@ input[type="text"]:focus {
   width: min(1240px, calc(100vw - 48px));
 }
 
+.modal-dialog.comparison-gallery-modal-dialog {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  width: min(1120px, calc(100vw - 48px));
+  max-height: calc(100vh - 48px);
+}
+
 .comparison-modal-header {
   display: flex;
   align-items: start;
@@ -662,6 +853,10 @@ input[type="text"]:focus {
 
 .comparison-modal-body {
   padding: 18px;
+}
+
+.comparison-gallery-modal-body {
+  min-height: 0;
 }
 
 .explanation-panel {
@@ -713,6 +908,7 @@ input[type="text"]:focus {
 .table-wrap {
   overflow: auto;
   min-height: 0;
+  scrollbar-gutter: stable;
 }
 
 table {
@@ -945,6 +1141,51 @@ td {
   max-height: 220px;
   overflow: auto;
   padding: 18px;
+  scrollbar-gutter: stable;
+}
+
+.view.active,
+#performanceView .performance-panel,
+.comparison-gallery,
+.table-wrap,
+.log {
+  scrollbar-width: thin;
+  scrollbar-color: #9aa8b4 #eef2f5;
+}
+
+.view.active::-webkit-scrollbar,
+#performanceView .performance-panel::-webkit-scrollbar,
+.comparison-gallery::-webkit-scrollbar,
+.table-wrap::-webkit-scrollbar,
+.log::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.view.active::-webkit-scrollbar-track,
+#performanceView .performance-panel::-webkit-scrollbar-track,
+.comparison-gallery::-webkit-scrollbar-track,
+.table-wrap::-webkit-scrollbar-track,
+.log::-webkit-scrollbar-track {
+  background: #eef2f5;
+}
+
+.view.active::-webkit-scrollbar-thumb,
+#performanceView .performance-panel::-webkit-scrollbar-thumb,
+.comparison-gallery::-webkit-scrollbar-thumb,
+.table-wrap::-webkit-scrollbar-thumb,
+.log::-webkit-scrollbar-thumb {
+  border: 2px solid #eef2f5;
+  border-radius: 999px;
+  background: #9aa8b4;
+}
+
+.view.active::-webkit-scrollbar-thumb:hover,
+#performanceView .performance-panel::-webkit-scrollbar-thumb:hover,
+.comparison-gallery::-webkit-scrollbar-thumb:hover,
+.table-wrap::-webkit-scrollbar-thumb:hover,
+.log::-webkit-scrollbar-thumb:hover {
+  background: #748390;
 }
 
 .log-entry {

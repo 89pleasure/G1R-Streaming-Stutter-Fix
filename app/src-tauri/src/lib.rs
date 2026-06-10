@@ -74,6 +74,11 @@ struct FilePreviewDto {
     will_backup: bool,
     will_set_read_only: bool,
     will_apply_balanced_performance_tweaks: bool,
+    will_apply_disable_volumetric_fog: bool,
+    will_apply_low_volumetric_fog: bool,
+    will_apply_d3d12_pso_cache: bool,
+    will_apply_runtime_pso_precaching: bool,
+    will_apply_gc_smoothing: bool,
     will_skip_intro_videos: bool,
 }
 
@@ -146,7 +151,12 @@ fn preview_install(
     lock_scalability: bool,
     streaming_fixes: bool,
     balanced_performance: bool,
+    disable_volumetric_fog: bool,
+    low_volumetric_fog: bool,
     skip_intro_videos: bool,
+    d3d12_pso_cache: bool,
+    runtime_pso_precaching: bool,
+    gc_smoothing: bool,
 ) -> Result<Vec<FilePreviewDto>, String> {
     let preset_root = resolve_preset_root(&app)?;
     let target_dir = parse_target_dir(&target_dir)?;
@@ -160,7 +170,12 @@ fn preview_install(
             lock_scalability_ini: lock_scalability,
             apply_streaming_fixes: streaming_fixes,
             apply_balanced_performance_tweaks: balanced_performance,
+            apply_disable_volumetric_fog: disable_volumetric_fog,
+            apply_low_volumetric_fog: low_volumetric_fog,
             apply_skip_intro_videos: skip_intro_videos,
+            apply_d3d12_pso_cache: d3d12_pso_cache,
+            apply_runtime_pso_precaching: runtime_pso_precaching,
+            apply_gc_smoothing: gc_smoothing,
         },
     )
     .map_err(to_error_string)?;
@@ -178,7 +193,12 @@ fn install_preset(
     lock_scalability: bool,
     streaming_fixes: bool,
     balanced_performance: bool,
+    disable_volumetric_fog: bool,
+    low_volumetric_fog: bool,
     skip_intro_videos: bool,
+    d3d12_pso_cache: bool,
+    runtime_pso_precaching: bool,
+    gc_smoothing: bool,
 ) -> Result<InstallReportDto, String> {
     let preset_root = resolve_preset_root(&app)?;
     let target_dir = parse_target_dir(&target_dir)?;
@@ -192,7 +212,12 @@ fn install_preset(
             lock_scalability_ini: lock_scalability,
             apply_streaming_fixes: streaming_fixes,
             apply_balanced_performance_tweaks: balanced_performance,
+            apply_disable_volumetric_fog: disable_volumetric_fog,
+            apply_low_volumetric_fog: low_volumetric_fog,
             apply_skip_intro_videos: skip_intro_videos,
+            apply_d3d12_pso_cache: d3d12_pso_cache,
+            apply_runtime_pso_precaching: runtime_pso_precaching,
+            apply_gc_smoothing: gc_smoothing,
         },
     )
     .map_err(to_error_string)?;
@@ -349,8 +374,12 @@ impl From<FilePreview> for FilePreviewDto {
             preset_pool_mb: preview.preset_pool_mb,
             will_backup: preview.will_backup,
             will_set_read_only: preview.will_set_read_only,
-            will_apply_balanced_performance_tweaks: preview
-                .will_apply_balanced_performance_tweaks,
+            will_apply_balanced_performance_tweaks: preview.will_apply_balanced_performance_tweaks,
+            will_apply_disable_volumetric_fog: preview.will_apply_disable_volumetric_fog,
+            will_apply_low_volumetric_fog: preview.will_apply_low_volumetric_fog,
+            will_apply_d3d12_pso_cache: preview.will_apply_d3d12_pso_cache,
+            will_apply_runtime_pso_precaching: preview.will_apply_runtime_pso_precaching,
+            will_apply_gc_smoothing: preview.will_apply_gc_smoothing,
             will_skip_intro_videos: preview.will_skip_intro_videos,
         }
     }

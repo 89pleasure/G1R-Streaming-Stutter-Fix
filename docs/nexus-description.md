@@ -11,21 +11,22 @@ The game ships with very small texture streaming pools:
 Texture Quality Low:       200 MB
 Texture Quality Medium:    300 MB
 Texture Quality High-ish:  400-500 MB
-Texture Quality Cine:      1000 MB
+Texture Quality Overdose:  1000 MB
 ```
 
-Many players use Texture Quality Cine on modern GPUs, which means the default
-pool can still be only `1000 MB`. On GPUs with 8-24 GB VRAM this can cause
-unnecessary texture streaming pressure, texture pop-in and frametime drops.
+Many players use Texture Quality Overdose on modern GPUs, which means the
+default pool can still be only `1000 MB`. On GPUs with 8-24 GB VRAM this can
+cause unnecessary texture streaming pressure, texture pop-in and frametime drops.
 
 This mod raises the texture streaming pool based on your GPU VRAM and adds
 conservative shader/loading tweaks. It does not reduce Lumen, Nanite, shadow
 quality, texture quality, view distance or resolution.
 
 The desktop app also offers optional `Balanced Performance Tweaks`. This mode is
-off by default and adds conservative `Scalability.ini` Cine profile caps without
-writing `GameUserSettings.ini`. It is labeled `Cine only` because the current
-tweak set targets the Cine scalability profile, not the lower profiles.
+off by default and adds conservative `Scalability.ini` caps for the Overdose
+profile without writing `GameUserSettings.ini`. It is labeled `Overdose only`
+because the current tweak set targets the Overdose profile, not the lower
+profiles.
 
 The desktop app also includes optional `Game Tweaks`, starting with `Skip Intro
 Videos`. This writes `Game.ini` to skip startup logo/legal movies while keeping

@@ -17,11 +17,11 @@ function comparisonScene(id, label, filePrefix) {
       src: `${imageBase}/${filePrefix}-balanced-cine.webp`,
     },
     before: {
-      label: "Cine",
+      label: "Overdose",
       src: `${imageBase}/${filePrefix}-cine.webp`,
     },
     after: {
-      label: "Balanced (Cine)",
+      label: "Balanced (Overdose)",
       src: `${imageBase}/${filePrefix}-balanced-cine.webp`,
     },
   };

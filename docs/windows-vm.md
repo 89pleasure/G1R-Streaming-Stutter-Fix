@@ -111,6 +111,21 @@ After Windows is installed, start it without setup media:
 ./scripts/windows-vm-run.sh
 ```
 
+The launcher defaults the VM display mode to `1920x1080`. It passes the value
+both to OVMF and to an explicit QEMU video adapter so Windows can see the mode.
+The GTK display backend also uses `zoom-to-fit=on` so the host window can scale
+the 1080p guest output. To use a different resolution, set `DISPLAY_RESOLUTION` in
+`scripts/windows-vm.env`:
+
+```bash
+DISPLAY_RESOLUTION="2560x1440"
+```
+
+The default `VIDEO_DEVICE="VGA"` works without extra Windows drivers. After
+installing guest display drivers, you can try `virtio-vga` or `qxl-vga`.
+If Windows still opens at the old size after the first boot, choose `1920 x 1080`
+once under Windows Display settings; the mode is now advertised by QEMU.
+
 To inspect the resolved configuration without starting QEMU:
 
 ```bash
