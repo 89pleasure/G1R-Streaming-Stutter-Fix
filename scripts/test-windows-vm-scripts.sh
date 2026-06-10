@@ -82,6 +82,14 @@ test_windows_icon_file_exists_for_tauri_build() {
     || fail "Tauri Windows builds require a non-empty icon file at $icon_path"
 }
 
+test_tauri_windows_release_uses_gui_subsystem() {
+  local main_rs="$REPO_ROOT/app/src-tauri/src/main.rs"
+
+  grep -Fq 'windows_subsystem = "windows"' "$main_rs" \
+    || fail "Tauri Windows release builds should use the GUI subsystem to avoid a console window"
+}
+
 test_missing_optional_virtio_iso_is_not_attached
 test_windows_11_secure_boot_firmware_is_preferred
 test_windows_icon_file_exists_for_tauri_build
+test_tauri_windows_release_uses_gui_subsystem
