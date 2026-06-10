@@ -1,0 +1,57 @@
+name: Windows App Build
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-windows-app:
+    name: Build Windows NSIS installer
+    runs-on: windows-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Cargo registry and build output
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            app/src-tauri/target
+          key: windows-tauri-${{ runner.os }}-${{ hashFiles('Cargo.lock', 'app/src-tauri/Cargo.toml', 'optimizer-core/Cargo.toml', 'app/package-lock.json') }}
+          restore-keys: |
+            windows-tauri-${{ runner.os }}-
+
+      - name: Install NSIS
+        shell: powershell
+        run: choco install nsis -y --no-progress
+
+      - name: Install app dependencies
+        working-directory: app
+        run: npm ci
+
+      - name: Build Tauri Windows bundle
+        working-directory: app
+        run: npm run build
+
+      - name: Upload NSIS installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: g1r-optimizer-windows-nsis
+          path: app/src-tauri/target/release/bundle/nsis/*
+          if-no-files-found: error

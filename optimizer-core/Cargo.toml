@@ -1,0 +1,18 @@
+[package]
+name = "optimizer-core"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+
+[lib]
+name = "optimizer_core"
+path = "src/lib.rs"
+
+[dependencies]
+sysinfo = "=0.35.2"
+
+[target.'cfg(target_os = "linux")'.dependencies]
+nvml-wrapper = "0.12.1"
+
+[target.'cfg(windows)'.dependencies]
+windows = { version = "0.62", features = ["Win32_Graphics_Dxgi"] }

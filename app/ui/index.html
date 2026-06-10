@@ -1,0 +1,446 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>G1R Optimizer</title>
+    <link rel="stylesheet" href="./styles.css" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%232c8f6d'/%3E%3Ctext x='32' y='40' text-anchor='middle' font-family='Arial,sans-serif' font-size='22' font-weight='700' fill='white'%3EG1R%3C/text%3E%3C/svg%3E"
+    />
+  </head>
+  <body>
+    <main class="app-shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brand-mark">G1R</div>
+          <div>
+            <div class="brand-title">G1R Optimizer</div>
+            <div class="brand-subtitle">Gothic 1 Remake</div>
+          </div>
+        </div>
+
+        <nav class="nav" aria-label="Views">
+          <button class="nav-item active" type="button" data-view="optimizeStreaming">
+            Optimize Streaming
+          </button>
+          <button class="nav-item" type="button" data-view="performance">Performance Tweaks</button>
+          <button class="nav-item" type="button" data-view="gameTweaks">Game Tweaks</button>
+          <button class="nav-item reset-nav-item" id="resetVanillaButton" type="button">
+            Reset
+          </button>
+        </nav>
+
+        <div class="sidebar-footer">
+          <button class="nav-item" type="button" data-view="backups">Backups</button>
+          <button class="nav-item" type="button" data-view="diagnostics">Diagnostics</button>
+          <div class="sidebar-settings">
+            <button class="nav-item settings-item" type="button" data-view="settings">
+              Settings
+            </button>
+          </div>
+        </div>
+      </aside>
+
+      <section class="workspace preview-visible" id="workspace">
+        <header class="topbar">
+          <div>
+            <h1 id="pageTitle">Optimize Streaming</h1>
+            <p id="appStatus">Preparing preset data</p>
+          </div>
+          <button class="secondary-button" id="refreshButton" type="button">Refresh</button>
+        </header>
+
+        <section class="view active" id="optimizeStreamingView">
+          <div class="layout-grid">
+            <section class="panel preset-panel" id="presetPanel" aria-labelledby="presetHeading">
+              <div class="panel-header">
+                <h2 id="presetHeading">Streaming Preset</h2>
+                <div class="panel-actions">
+                  <span class="pill" id="streamingStatus">On</span>
+                  <span class="pill" id="presetCount">0 presets</span>
+                </div>
+              </div>
+              <label class="feature-toggle">
+                <input id="streamingFixesToggle" type="checkbox" checked />
+                <span class="feature-copy">
+                  <span class="feature-title">Enable streaming fixes</span>
+                  <span class="feature-description">
+                    Writes the selected texture streaming pool preset to Engine.ini and
+                    Scalability.ini.
+                  </span>
+                </span>
+              </label>
+              <div class="preset-grid" id="presetGrid"></div>
+              <div class="recommendation-summary" id="recommendationSummary">
+                Hardware recommendation unavailable.
+              </div>
+            </section>
+            <aside class="panel explanation-panel" aria-labelledby="streamingInfoHeading">
+              <div class="panel-header">
+                <h2 id="streamingInfoHeading">Streaming Optimization</h2>
+                <span class="pill">Config preset</span>
+              </div>
+              <div class="explanation-body">
+                <p>
+                  Sets the Unreal texture streaming pool to a value that matches the selected GPU
+                  memory class. The goal is smoother asset streaming without pushing the pool beyond
+                  the card's practical budget.
+                </p>
+                <dl class="explanation-list">
+                  <div>
+                    <dt>Changes</dt>
+                    <dd>Engine.ini and Scalability.ini streaming pool values.</dd>
+                  </div>
+                  <div>
+                    <dt>Optional</dt>
+                    <dd>Turn streaming fixes off if you only want Performance Tweaks.</dd>
+                  </div>
+                  <div>
+                    <dt>Recommendation</dt>
+                    <dd>Shown from detected VRAM, but the selected preset stays user-controlled.</dd>
+                  </div>
+                  <div>
+                    <dt>Safety</dt>
+                    <dd>Existing files are backed up before replacement.</dd>
+                  </div>
+                </dl>
+              </div>
+            </aside>
+          </div>
+        </section>
+
+        <section class="view" id="performanceView">
+          <div class="layout-grid">
+            <section class="panel performance-panel" aria-labelledby="performanceHeading">
+              <div class="panel-header">
+                <h2 id="performanceHeading">Balanced Performance Tweaks</h2>
+                <div class="panel-actions">
+                  <span class="pill" id="performanceStatus">Off</span>
+                  <span class="pill warn">Cine only</span>
+                </div>
+              </div>
+              <label class="performance-toggle">
+                <input id="balancedPerformanceToggle" type="checkbox" />
+                <span class="performance-copy">
+                  <span class="performance-title">Opt-in Cine quality caps</span>
+                  <span class="performance-description">
+                    Conservative Scalability.ini tweaks for the Cine profile without disabling
+                    Lumen, Nanite or virtual shadows.
+                  </span>
+                  <span class="impact-list">
+                    <span>Cine profile only</span>
+                    <span>Low visual impact</span>
+                    <span>Backed up</span>
+                  </span>
+                </span>
+              </label>
+              <div class="performance-details" id="performanceOptimizationDetails">
+                <p>
+                  Adds conservative Scalability.ini caps for the Cine profile only. These tweaks are
+                  useful when the game is running the Cine scalability profile and preserve the
+                  game's core lighting and geometry features.
+                </p>
+                <dl class="explanation-list">
+                  <div>
+                    <dt>Scope</dt>
+                    <dd>Only writes Cine scalability groups such as ShadowQuality@Cine.</dd>
+                  </div>
+                  <div>
+                    <dt>Changes</dt>
+                    <dd>Minor post-processing, reflections, and volumetric quality settings.</dd>
+                  </div>
+                  <div>
+                    <dt>Preserves</dt>
+                    <dd>Lumen, Nanite, and virtual shadows are not disabled.</dd>
+                  </div>
+                  <div>
+                    <dt>Control</dt>
+                    <dd>The toggle changes the preview first; optimization still requires Optimize.</dd>
+                  </div>
+                </dl>
+              </div>
+            </section>
+
+            <section
+              class="panel comparison-panel"
+              aria-labelledby="performanceComparisonHeading"
+            >
+              <div class="panel-header comparison-header">
+                <div>
+                  <h2 id="performanceComparisonHeading">Visual Comparison</h2>
+                  <p>Open a scene to compare Cine against Balanced (Cine).</p>
+                </div>
+                <span class="pill">FPS overlay included</span>
+              </div>
+              <div
+                class="comparison-gallery"
+                id="performanceComparisonGallery"
+                aria-label="Comparison previews"
+              ></div>
+            </section>
+          </div>
+        </section>
+
+        <section class="view" id="gameTweaksView">
+          <div class="layout-grid">
+            <section class="panel performance-panel" aria-labelledby="gameTweaksHeading">
+              <div class="panel-header">
+                <h2 id="gameTweaksHeading">Game Tweaks</h2>
+                <span class="pill" id="gameTweaksStatus">Off</span>
+              </div>
+              <label class="performance-toggle">
+                <input id="skipIntroVideosToggle" type="checkbox" />
+                <span class="performance-copy">
+                  <span class="performance-title">Skip Intro Videos</span>
+                  <span class="performance-description">
+                    Skips logo and legal videos through Game.ini settings without deleting or
+                    overwriting original movie files.
+                  </span>
+                  <span class="impact-list">
+                    <span>Startup only</span>
+                    <span>No file replacement</span>
+                    <span>Backed up</span>
+                  </span>
+                </span>
+              </label>
+            </section>
+            <aside class="panel explanation-panel" aria-labelledby="gameTweaksInfoHeading">
+              <div class="panel-header">
+                <h2 id="gameTweaksInfoHeading">Startup Tweaks</h2>
+                <span class="pill">Opt-in</span>
+              </div>
+              <div class="explanation-body">
+                <p>
+                  Keeps the engine loading screen active while removing the studio and legal
+                  startup movies from the configured startup list, so the menu can open without an
+                  extra click. Unlike existing file-replacement intro skip mods, this leaves the
+                  game's original video files untouched.
+                </p>
+                <dl class="explanation-list">
+                  <div>
+                    <dt>Changes</dt>
+                    <dd>Game.ini AsyncLoadingScreen startup movie list.</dd>
+                  </div>
+                  <div>
+                    <dt>Preserves</dt>
+                    <dd>No original video files are deleted, overwritten, or renamed.</dd>
+                  </div>
+                  <div>
+                    <dt>Loading screen</dt>
+                    <dd>The LoopingEngineLoadScreen remains as a valid startup loading screen.</dd>
+                  </div>
+                  <div>
+                    <dt>Control</dt>
+                    <dd>The toggle changes the preview first; optimization still requires Optimize.</dd>
+                  </div>
+                </dl>
+              </div>
+            </aside>
+          </div>
+        </section>
+
+        <section class="panel preview-panel" id="previewPanel" aria-labelledby="previewHeading">
+          <div class="panel-header">
+            <h2 id="previewHeading">Preview</h2>
+            <span class="pill" id="previewStatus">Waiting</span>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>File</th>
+                  <th>Current pool</th>
+                  <th>Preset pool</th>
+                  <th>Tweaks</th>
+                  <th>Backup</th>
+                  <th>Read-only</th>
+                </tr>
+              </thead>
+              <tbody id="previewRows"></tbody>
+            </table>
+          </div>
+          <div class="action-row">
+            <div class="action-feedback">
+              <button class="primary-button" id="optimizeButton" type="button">Optimize</button>
+              <span class="action-status" id="optimizeStatus" aria-live="polite" hidden></span>
+            </div>
+            <div class="last-result" id="lastResult" hidden>No changes applied</div>
+          </div>
+        </section>
+
+        <section class="view" id="backupsView">
+          <section class="panel" aria-labelledby="backupsHeading">
+            <div class="panel-header">
+              <h2 id="backupsHeading">Backups</h2>
+              <div class="panel-actions">
+                <button class="secondary-button compact" id="loadBackupsButton" type="button">
+                  Reload
+                </button>
+              </div>
+            </div>
+            <div class="backup-list" id="backupList"></div>
+          </section>
+        </section>
+
+        <section class="view" id="diagnosticsView">
+          <section class="panel" aria-labelledby="diagnosticsHeading">
+            <div class="panel-header">
+              <h2 id="diagnosticsHeading">Diagnostics</h2>
+              <span class="pill" id="diagnosticsStatus">Ready</span>
+            </div>
+            <dl class="diagnostics-list">
+              <div>
+                <dt>Runtime</dt>
+                <dd id="runtimeStatus">Loading</dd>
+              </div>
+              <div>
+                <dt>Preset root</dt>
+                <dd id="presetRootValue">Unknown</dd>
+              </div>
+              <div>
+                <dt>Selected preset</dt>
+                <dd id="selectedPresetValue">None</dd>
+              </div>
+              <div>
+                <dt>Recommended preset</dt>
+                <dd id="recommendedPresetValue">None</dd>
+              </div>
+              <div>
+                <dt>Selected target</dt>
+                <dd id="selectedTargetValue">None</dd>
+              </div>
+            </dl>
+            <div class="log" id="activityLog" aria-live="polite"></div>
+          </section>
+        </section>
+
+        <section class="view" id="settingsView">
+          <section class="panel target-panel" aria-labelledby="targetHeading">
+            <div class="panel-header">
+              <h2 id="targetHeading">Game Config Folder</h2>
+              <span class="pill" id="pathStatus">Unchecked</span>
+            </div>
+            <label class="field-label" for="candidateSelect">Detected locations</label>
+            <select id="candidateSelect"></select>
+            <label class="field-label" for="targetInput">Target path</label>
+            <input id="targetInput" type="text" spellcheck="false" />
+            <div class="toggles">
+              <label class="toggle">
+                <input id="lockEngineToggle" type="checkbox" checked />
+                <span>Lock Engine.ini</span>
+              </label>
+              <label class="toggle">
+                <input id="lockGameToggle" type="checkbox" checked />
+                <span>Lock Game.ini</span>
+              </label>
+              <label class="toggle">
+                <input id="lockScalabilityToggle" type="checkbox" checked />
+                <span>Lock Scalability.ini</span>
+              </label>
+            </div>
+          </section>
+        </section>
+      </section>
+    </main>
+
+    <div class="modal-layer" id="confirmModal" hidden>
+      <section
+        class="modal-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="confirmModalTitle"
+        aria-describedby="confirmModalDescription"
+      >
+        <div class="modal-header">
+          <h2 id="confirmModalTitle">Reset to Vanilla?</h2>
+        </div>
+        <div class="modal-body">
+          <p id="confirmModalDescription">
+            This removes Engine.ini, Game.ini and Scalability.ini from the selected game config
+            folder. A backup is created first.
+          </p>
+        </div>
+        <div class="modal-actions">
+          <button class="secondary-button" id="confirmModalCancel" type="button">Cancel</button>
+          <button class="danger-button" id="confirmModalConfirm" type="button">
+            Reset to Vanilla
+          </button>
+        </div>
+      </section>
+    </div>
+
+    <div class="modal-layer comparison-modal-layer" id="comparisonModal" hidden>
+      <section
+        class="modal-dialog comparison-modal-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="comparisonModalTitle"
+        aria-describedby="comparisonModalDescription"
+      >
+        <div class="modal-header comparison-modal-header">
+          <div>
+            <h2 id="comparisonModalTitle">Visual Comparison</h2>
+            <p id="comparisonModalDescription">
+              Cine versus Balanced (Cine), with the FPS overlay left visible.
+            </p>
+          </div>
+          <button
+            class="secondary-button compact"
+            id="comparisonModalClose"
+            type="button"
+          >
+            Close
+          </button>
+        </div>
+        <div class="comparison-modal-body">
+          <div
+            class="comparison-stage"
+            id="performanceComparisonStage"
+            style="--comparison-position: 50%"
+          >
+            <img
+              class="comparison-image"
+              id="performanceComparisonBeforeImage"
+              alt=""
+              decoding="async"
+            />
+            <div class="comparison-after-layer">
+              <img
+                class="comparison-image"
+                id="performanceComparisonAfterImage"
+                alt=""
+                decoding="async"
+              />
+            </div>
+            <div class="comparison-divider" aria-hidden="true"></div>
+            <span
+              class="comparison-label comparison-label-before"
+              id="performanceComparisonBeforeLabel"
+            >
+              Cine
+            </span>
+            <span
+              class="comparison-label comparison-label-after"
+              id="performanceComparisonAfterLabel"
+            >
+              Balanced (Cine)
+            </span>
+            <input
+              class="comparison-range"
+              id="performanceComparisonRange"
+              type="range"
+              min="0"
+              max="100"
+              value="50"
+              aria-label="Before and after comparison position"
+            />
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>

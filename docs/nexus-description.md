@@ -22,6 +22,16 @@ This mod raises the texture streaming pool based on your GPU VRAM and adds
 conservative shader/loading tweaks. It does not reduce Lumen, Nanite, shadow
 quality, texture quality, view distance or resolution.
 
+The desktop app also offers optional `Balanced Performance Tweaks`. This mode is
+off by default and adds conservative `Scalability.ini` Cine profile caps without
+writing `GameUserSettings.ini`. It is labeled `Cine only` because the current
+tweak set targets the Cine scalability profile, not the lower profiles.
+
+The desktop app also includes optional `Game Tweaks`, starting with `Skip Intro
+Videos`. This writes `Game.ini` to skip startup logo/legal movies while keeping
+the engine loading screen. Unlike file-replacement intro skip mods, it does not
+delete, overwrite, or rename the game's original video files.
+
 ## Presets
 
 ```text
@@ -52,7 +62,7 @@ preset lower.
 
 3. Back up `Engine.ini` and `Scalability.ini` if they exist.
 4. Copy `Engine.ini` and `Scalability.ini` from your chosen preset folder.
-5. Set `Engine.ini` to read-only.
+5. Set `Engine.ini` and `Scalability.ini` to read-only.
 6. Launch and test.
 
 Linux / Proton users can use the matching Proton prefix path:

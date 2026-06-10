@@ -1,0 +1,5 @@
+[workspace]
+members = ["optimizer-core"]
+exclude = ["app/src-tauri"]
+resolver = "2"
+

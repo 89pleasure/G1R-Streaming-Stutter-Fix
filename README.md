@@ -29,6 +29,42 @@ modern GPUs with much more VRAM.
 This project provides `Engine.ini` and `Scalability.ini` presets that raise that
 pool in a controlled, VRAM-based way.
 
+## Desktop App
+
+The repository now includes an early Tauri/Rust desktop app in `app/`.
+
+The app wraps the same presets with a safer workflow:
+
+- detects common Windows and Linux/Proton config folders
+- previews the selected preset before writing files
+- backs up existing `Engine.ini` and `Scalability.ini`
+- installs the selected preset
+- can opt into balanced Scalability.ini performance tweaks
+- can opt into Game.ini tweaks such as skipping intro videos
+- restores backups created by the app
+
+The optimizer core lives in `optimizer-core/` and is intentionally separate from
+the Tauri UI so it can also become a CLI later.
+
+Development commands:
+
+```bash
+cargo test -p optimizer-core
+cd app
+npm install
+npm run dev
+```
+
+Build commands:
+
+```bash
+cd app
+npm run build
+```
+
+The Tauri bundle includes the repository `Presets/` directory as an app resource.
+See `docs/desktop-app.md` for architecture notes.
+
 ## Presets
 
 ```text
@@ -64,7 +100,8 @@ the GPU limit, use one preset lower.
 3. Back up existing `Engine.ini` and `Scalability.ini` if they exist.
 4. Pick the preset matching your GPU VRAM.
 5. Copy `Engine.ini` and `Scalability.ini` from that preset folder into the config folder.
-6. Set `Engine.ini` to read-only. Optionally set `Scalability.ini` to read-only too.
+6. Set `Engine.ini` and `Scalability.ini` to read-only. This prevents the game from
+   removing or rewriting them on launch.
 7. Launch and test.
 
 ## Notes
@@ -72,6 +109,18 @@ the GPU limit, use one preset lower.
 This is mainly a stutter/frametime/streaming fix, not a guaranteed average FPS
 mod. Average FPS can improve if the game was limited by streaming pressure, but
 the main goal is smoother gameplay.
+
+The desktop app includes an optional `Balanced Performance Tweaks` switch. It is
+off by default and only adds conservative `Scalability.ini` caps for the Cine
+profile; it does not write `GameUserSettings.ini` or disable Lumen, Nanite or
+virtual shadows. The app labels this as `Cine only` because the current tweak set
+does not target the lower scalability profiles.
+
+The `Game Tweaks` page includes an optional `Skip Intro Videos` switch. It
+writes `Game.ini` to remove startup logo/legal movies from the startup loading
+screen list while keeping the engine loading screen, so the game reaches the
+menu without an extra click. It does not delete, overwrite, or rename original
+video files.
 
 `r.MotionBlurQuality=0` is included because many users disable motion blur in
 the menu, while the Cine post-process profile can still set engine-side motion

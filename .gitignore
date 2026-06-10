@@ -5,9 +5,21 @@
 
 # Local scratch files
 tmp/
+.superpowers/
+vm/
+scripts/windows-vm.env
 *.bak
 *.backup
 *.disabled-*
+*.qcow2
+*.iso
+
+# Build outputs
+target/
+node_modules/
+dist/
+app/src-tauri/target/
+app/node_modules/
 
 # OS/editor noise
 .DS_Store

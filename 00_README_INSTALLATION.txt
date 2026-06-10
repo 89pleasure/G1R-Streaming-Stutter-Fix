@@ -12,6 +12,9 @@ This mod raises the texture streaming pool based on your GPU VRAM and adds
 conservative shader/loading tweaks. It does not lower Lumen, Nanite, shadows,
 foliage, resolution or texture quality.
 
+The desktop app can optionally add Balanced Performance Tweaks. This is off by
+default and does not write GameUserSettings.ini.
+
 
 CONFIG LOCATION
 
@@ -33,9 +36,9 @@ INSTALLATION
 3. Back up your existing Engine.ini and Scalability.ini if they exist.
 4. Pick the preset matching your GPU VRAM.
 5. Copy Engine.ini and Scalability.ini from that preset folder into the config folder.
-6. Set Engine.ini to read-only. This is important because the game may remove it.
-7. Optional: set Scalability.ini to read-only too.
-8. Start the game and test.
+6. Set Engine.ini and Scalability.ini to read-only. This is important because the
+   game may remove or rewrite them on launch.
+7. Start the game and test.
 
 
 PRESET GUIDE
