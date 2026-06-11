@@ -2142,6 +2142,8 @@ name = "optimizer-core"
 version = "0.1.0"
 dependencies = [
  "nvml-wrapper",
+ "serde",
+ "serde_json",
  "sysinfo",
  "windows 0.62.2",
 ]

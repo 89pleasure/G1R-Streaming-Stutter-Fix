@@ -15,18 +15,12 @@ assert.doesNotMatch(optimizeStreamingView, /id="streamingInfoDetails"/);
 assert.doesNotMatch(optimizeStreamingView, /class="info-button/);
 assert.doesNotMatch(optimizeStreamingView, /data-streaming-info=/);
 
-for (const detailLabel of [
-  "Streaming pool write",
-  "D3D12 pipeline cache",
-  "Runtime PSO work",
-  "Garbage collection timing",
-]) {
-  assert.match(
-    optimizeStreamingView,
-    new RegExp(`<span class="streaming-detail-title">${detailLabel}</span>`),
-    `${detailLabel} detail is visible inline in Optimize Streaming`,
-  );
-}
+assert.doesNotMatch(optimizeStreamingView, /class="streaming-detail-title"/);
+assert.doesNotMatch(optimizeStreamingView, /class="streaming-detail-heading"/);
+assert.ok(
+  optimizeStreamingView.match(/<div class="streaming-feature-detail">\s*<p>/g)?.length >= 4,
+  "Optimize Streaming detail boxes start directly with explanatory text",
+);
 
 assert.doesNotMatch(main, /const streamingInfoContent = \{/);
 assert.doesNotMatch(main, /selectedStreamingInfo/);

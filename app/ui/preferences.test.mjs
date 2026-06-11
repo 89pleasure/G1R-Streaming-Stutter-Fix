@@ -27,6 +27,7 @@ function createMemoryStorage() {
   assert.equal(preferences.lockEngine, true);
   assert.equal(preferences.lockGame, true);
   assert.equal(preferences.lockScalability, true);
+  assert.equal(preferences.customPoolMb, 12288);
 }
 
 {
@@ -44,6 +45,7 @@ function createMemoryStorage() {
       lockEngine: false,
       lockGame: true,
       lockScalability: true,
+      customPoolMb: 16384,
       selectedPresetId: "20GB_VRAM_10240MB",
       targetDir: "/tmp/G1R/Config/Windows",
     },
@@ -61,6 +63,7 @@ function createMemoryStorage() {
     lockEngine: false,
     lockGame: true,
     lockScalability: true,
+    customPoolMb: 16384,
     selectedPresetId: "20GB_VRAM_10240MB",
     targetDir: "/tmp/G1R/Config/Windows",
   });

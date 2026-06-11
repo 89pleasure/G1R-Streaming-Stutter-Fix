@@ -1,6 +1,12 @@
 import { loadUiPreferences, saveUiPreferences } from "./preferences.js";
 import { performanceComparisonScenes } from "./performance-comparisons.js";
 
+const CUSTOM_PRESET_ID = "CUSTOM_POOL";
+const DEFAULT_CUSTOM_POOL_MB = 12288;
+const MIN_CUSTOM_POOL_MB = 512;
+const MAX_CUSTOM_POOL_MB = 65536;
+const CUSTOM_POOL_STEP_MB = 256;
+
 const state = {
   presets: [],
   candidates: [],
@@ -9,7 +15,9 @@ const state = {
   recommendation: null,
   hardware: null,
   targetDir: "",
+  customPoolMb: DEFAULT_CUSTOM_POOL_MB,
   preview: [],
+  iniCopyFiles: [],
   backups: [],
   currentView: "optimizeStreaming",
   selectedComparisonSceneId: performanceComparisonScenes[0]?.id ?? "",
@@ -25,7 +33,7 @@ const samplePresets = [
   { id: "12GB_VRAM_6144MB", label: "12 GB VRAM / 6144 MB pool", vram_gb: 12, pool_mb: 6144 },
   { id: "16GB_VRAM_8192MB", label: "16 GB VRAM / 8192 MB pool", vram_gb: 16, pool_mb: 8192 },
   { id: "20GB_VRAM_10240MB", label: "20 GB VRAM / 10240 MB pool", vram_gb: 20, pool_mb: 10240 },
-  { id: "24GB_VRAM_12288MB", label: "24 GB VRAM / 12288 MB pool", vram_gb: 24, pool_mb: 12288 },
+  { id: "24GB_VRAM_12288MB", label: "24+ GB VRAM / 12288 MB pool", vram_gb: 24, pool_mb: 12288 },
 ];
 
 const viewTitles = {
@@ -42,6 +50,8 @@ const viewsWithPreview = new Set(["optimizeStreaming", "performance", "gameTweak
 const elements = {};
 let confirmModalResolve = null;
 let confirmModalPreviousFocus = null;
+let confirmModalActionButtons = [];
+let iniCopyModalPreviousFocus = null;
 let comparisonGalleryModalPreviousFocus = null;
 let comparisonModalPreviousFocus = null;
 let resultClearTimer = null;
@@ -65,6 +75,9 @@ function bindElements() {
     "streamingStatus",
     "presetCount",
     "presetGrid",
+    "customPoolPanel",
+    "customPoolInput",
+    "customPoolHint",
     "recommendationSummary",
     "candidateSelect",
     "targetInput",
@@ -100,6 +113,7 @@ function bindElements() {
     "previewPanel",
     "previewStatus",
     "previewRows",
+    "copyIniButton",
     "optimizeButton",
     "optimizeStatus",
     "lastResult",
@@ -112,8 +126,13 @@ function bindElements() {
     "selectedTargetValue",
     "activityLog",
     "confirmModal",
+    "confirmModalTitle",
+    "confirmModalDescription",
     "confirmModalCancel",
     "confirmModalConfirm",
+    "iniCopyModal",
+    "iniCopyModalClose",
+    "iniCopyFileList",
   ]) {
     elements[id] = document.getElementById(id);
   }
@@ -123,6 +142,7 @@ function applyStoredPreferences() {
   const preferences = loadUiPreferences();
   state.selectedPresetId = preferences.selectedPresetId;
   state.targetDir = preferences.targetDir;
+  state.customPoolMb = preferences.customPoolMb;
   elements.streamingFixesToggle.checked = preferences.streamingFixes;
   elements.balancedPerformanceToggle.checked = preferences.balancedPerformance;
   setVolumetricFogMode(preferences.volumetricFogMode);
@@ -147,6 +167,7 @@ function persistUiPreferences() {
     lockEngine: elements.lockEngineToggle.checked,
     lockGame: elements.lockGameToggle.checked,
     lockScalability: elements.lockScalabilityToggle.checked,
+    customPoolMb: state.customPoolMb,
     selectedPresetId: state.selectedPresetId,
     targetDir: state.targetDir,
   });
@@ -162,9 +183,12 @@ function bindEvents() {
   elements.refreshButton.addEventListener("click", loadAppState);
   elements.loadBackupsButton.addEventListener("click", loadBackups);
   elements.resetVanillaButton.addEventListener("click", resetToVanilla);
+  elements.copyIniButton.addEventListener("click", openIniCopyModal);
   elements.optimizeButton.addEventListener("click", optimizeSelectedPreset);
   elements.confirmModalCancel.addEventListener("click", () => closeConfirmModal(false));
-  elements.confirmModalConfirm.addEventListener("click", () => closeConfirmModal(true));
+  elements.confirmModalConfirm.addEventListener("click", () =>
+    closeConfirmModal(elements.confirmModalConfirm.dataset.modalAction ?? true),
+  );
   elements.confirmModal.addEventListener("click", (event) => {
     if (event.target === elements.confirmModal) {
       closeConfirmModal(false);
@@ -180,6 +204,12 @@ function bindEvents() {
       closeComparisonGalleryModal();
     }
   });
+  elements.iniCopyModalClose.addEventListener("click", closeIniCopyModal);
+  elements.iniCopyModal.addEventListener("click", (event) => {
+    if (event.target === elements.iniCopyModal) {
+      closeIniCopyModal();
+    }
+  });
   elements.comparisonModalClose.addEventListener("click", closeComparisonModal);
   elements.comparisonModal.addEventListener("click", (event) => {
     if (event.target === elements.comparisonModal) {
@@ -193,6 +223,8 @@ function bindEvents() {
 
     if (!elements.comparisonModal.hidden) {
       closeComparisonModal();
+    } else if (!elements.iniCopyModal.hidden) {
+      closeIniCopyModal();
     } else if (!elements.comparisonGalleryModal.hidden) {
       closeComparisonGalleryModal();
     } else if (!elements.confirmModal.hidden) {
@@ -216,6 +248,17 @@ function bindEvents() {
     state.targetDir = elements.targetInput.value;
     persistUiPreferences();
     renderPathStatus();
+    renderDiagnostics();
+    refreshPreviewDebounced();
+  });
+
+  elements.customPoolInput.addEventListener("input", () => {
+    const poolMb = selectedCustomPoolMb();
+    if (poolMb !== null) {
+      state.customPoolMb = poolMb;
+      persistUiPreferences();
+    }
+    renderCustomPoolState(false);
     renderDiagnostics();
     refreshPreviewDebounced();
   });
@@ -285,7 +328,10 @@ async function loadAppState() {
     state.presetRoot = appState.preset_root;
     state.hardware = appState.hardware;
     state.recommendation = appState.recommendation ?? null;
-    if (!state.presets.some((preset) => preset.id === state.selectedPresetId)) {
+    if (
+      state.selectedPresetId !== CUSTOM_PRESET_ID &&
+      !state.presets.some((preset) => preset.id === state.selectedPresetId)
+    ) {
       state.selectedPresetId = pickDefaultPreset(state.presets)?.id || "";
     }
 
@@ -324,7 +370,7 @@ function renderAll() {
 }
 
 function renderPresets() {
-  elements.presetCount.textContent = `${state.presets.length} presets`;
+  elements.presetCount.textContent = `${state.presets.length + 1} presets`;
   elements.presetGrid.innerHTML = "";
 
   state.presets.forEach((preset) => {
@@ -356,6 +402,34 @@ function renderPresets() {
 
     elements.presetGrid.appendChild(button);
   });
+
+  const customButton = document.createElement("button");
+  customButton.type = "button";
+  customButton.className = [
+    "preset-option",
+    "custom-preset-option",
+    isCustomPresetSelected() ? "active" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+  customButton.innerHTML = `
+    <span class="preset-heading-row">
+      <span class="preset-vram">Custom</span>
+    </span>
+    <span class="preset-pool">${customPoolLabel()}</span>
+  `;
+  customButton.disabled = !streamingFixesEnabled();
+  customButton.addEventListener("click", () => {
+    state.selectedPresetId = CUSTOM_PRESET_ID;
+    persistUiPreferences();
+    renderPresets();
+    renderRecommendationSummary();
+    renderDiagnostics();
+    refreshPreview();
+  });
+  elements.presetGrid.appendChild(customButton);
+
+  renderCustomPoolState(true);
 }
 
 function renderRecommendationSummary() {
@@ -363,6 +437,13 @@ function renderRecommendationSummary() {
     elements.recommendationSummary.textContent =
       "Streaming fixes are off. The selected preset is kept, but it will not be installed.";
     elements.recommendationSummary.className = "recommendation-summary muted";
+    return;
+  }
+
+  if (isCustomPresetSelected()) {
+    elements.recommendationSummary.textContent =
+      "Custom pool size selected. The app will write the MB value from the custom field.";
+    elements.recommendationSummary.className = "recommendation-summary";
     return;
   }
 
@@ -417,7 +498,7 @@ function renderPathStatus() {
 }
 
 async function refreshPreview() {
-  if (!state.selectedPresetId || !state.targetDir.trim()) {
+  if (!selectedPresetIdForCommand() || !state.targetDir.trim()) {
     state.preview = [];
     elements.previewStatus.textContent = "Waiting";
     elements.previewStatus.className = "pill";
@@ -425,13 +506,22 @@ async function refreshPreview() {
     return;
   }
 
+  if (!customPoolSelectionValid()) {
+    state.preview = [];
+    elements.previewStatus.textContent = "Invalid";
+    elements.previewStatus.className = "pill bad";
+    renderPreview();
+    return;
+  }
+
   try {
     state.preview = await invokeCommand("preview_install", {
-      presetId: state.selectedPresetId,
+      presetId: selectedPresetIdForCommand(),
       targetDir: state.targetDir,
       lockEngine: elements.lockEngineToggle.checked,
       lockGame: elements.lockGameToggle.checked,
       lockScalability: elements.lockScalabilityToggle.checked,
+      customPoolMb: selectedCustomPoolMb(),
       streamingFixes: streamingFixesEnabled(),
       balancedPerformance: elements.balancedPerformanceToggle.checked,
       disableVolumetricFog: selectedVolumetricFogMode() === "off",
@@ -459,9 +549,9 @@ function renderPreview() {
   if (state.preview.length === 0) {
     const row = document.createElement("tr");
     row.className = "empty-row";
-    row.innerHTML = `<td colspan="6">${emptyPreviewMessage()}</td>`;
+    row.innerHTML = `<td colspan="7">${emptyPreviewMessage()}</td>`;
     elements.previewRows.appendChild(row);
-    elements.optimizeButton.disabled = true;
+    updateActionButtons();
     return;
   }
 
@@ -469,6 +559,7 @@ function renderPreview() {
     const row = document.createElement("tr");
     row.innerHTML = `
       <td>${escapeHtml(file.file_name)}</td>
+      <td>${formatModificationState(file.modification_state)}</td>
       <td>${formatPool(file.current_pool_mb)}</td>
       <td>${formatPool(file.preset_pool_mb)}</td>
       <td>${formatTweaks(file)}</td>
@@ -478,22 +569,132 @@ function renderPreview() {
     elements.previewRows.appendChild(row);
   });
 
-  elements.optimizeButton.disabled = state.busy || !hasTauriApi();
+  updateActionButtons();
+}
+
+async function openIniCopyModal() {
+  if (
+    !selectedPresetIdForCommand() ||
+    !selectedOptimizerChangesEnabled() ||
+    !customPoolSelectionValid()
+  ) {
+    return;
+  }
+
+  setBusy(true);
+  try {
+    state.iniCopyFiles = await invokeCommand("ini_file_contents", selectedIniContentArgs());
+    renderIniCopyModal();
+    iniCopyModalPreviousFocus = document.activeElement;
+    elements.iniCopyModal.hidden = false;
+    document.body.classList.add("modal-open");
+
+    window.requestAnimationFrame(() => {
+      elements.iniCopyModalClose.focus();
+    });
+  } catch (error) {
+    showActionResult("error", "Error", "Copy preview failed", false);
+    appendLog(`Copy preview failed: ${error}`);
+  } finally {
+    setBusy(false);
+  }
+}
+
+function renderIniCopyModal() {
+  elements.iniCopyFileList.innerHTML = "";
+
+  if (state.iniCopyFiles.length === 0) {
+    const empty = document.createElement("div");
+    empty.className = "ini-copy-empty";
+    empty.textContent = "No INI settings selected.";
+    elements.iniCopyFileList.appendChild(empty);
+    return;
+  }
+
+  for (const file of state.iniCopyFiles) {
+    const item = document.createElement("article");
+    item.className = "ini-copy-file";
+
+    const header = document.createElement("div");
+    header.className = "ini-copy-file-header";
+
+    const title = document.createElement("h3");
+    title.textContent = file.file_name;
+
+    const copyButton = document.createElement("button");
+    copyButton.className = "secondary-button compact";
+    copyButton.type = "button";
+    copyButton.textContent = "Copy";
+    copyButton.addEventListener("click", () => copyIniFileContent(file, copyButton));
+
+    const textarea = document.createElement("textarea");
+    textarea.className = "ini-copy-content";
+    textarea.spellcheck = false;
+    textarea.readOnly = true;
+    textarea.value = file.content;
+
+    header.append(title, copyButton);
+    item.append(header, textarea);
+    elements.iniCopyFileList.appendChild(item);
+  }
+}
+
+async function copyIniFileContent(file, button) {
+  try {
+    await navigator.clipboard.writeText(file.content);
+    button.textContent = "Copied";
+    appendLog(`Copied ${file.file_name} content to clipboard`);
+    window.setTimeout(() => {
+      button.textContent = "Copy";
+    }, 1800);
+  } catch (error) {
+    button.textContent = "Failed";
+    appendLog(`Copy failed for ${file.file_name}: ${error}`);
+  }
+}
+
+function closeIniCopyModal() {
+  elements.iniCopyModal.hidden = true;
+  state.iniCopyFiles = [];
+  elements.iniCopyFileList.innerHTML = "";
+  if (
+    elements.comparisonModal.hidden &&
+    elements.comparisonGalleryModal.hidden &&
+    elements.confirmModal.hidden
+  ) {
+    document.body.classList.remove("modal-open");
+  }
+
+  if (iniCopyModalPreviousFocus instanceof HTMLElement) {
+    iniCopyModalPreviousFocus.focus();
+  }
+  iniCopyModalPreviousFocus = null;
 }
 
 async function optimizeSelectedPreset() {
-  if (!state.selectedPresetId || !state.targetDir.trim()) {
+  if (!selectedPresetIdForCommand() || !state.targetDir.trim() || !customPoolSelectionValid()) {
+    return;
+  }
+
+  await refreshPreview();
+  if (state.preview.length === 0) {
+    return;
+  }
+
+  const installStrategy = await confirmOverwriteRisks();
+  if (!installStrategy) {
     return;
   }
 
   setBusy(true);
   try {
     const report = await invokeCommand("install_preset", {
-      presetId: state.selectedPresetId,
+      presetId: selectedPresetIdForCommand(),
       targetDir: state.targetDir,
       lockEngine: elements.lockEngineToggle.checked,
       lockGame: elements.lockGameToggle.checked,
       lockScalability: elements.lockScalabilityToggle.checked,
+      customPoolMb: selectedCustomPoolMb(),
       streamingFixes: streamingFixesEnabled(),
       balancedPerformance: elements.balancedPerformanceToggle.checked,
       disableVolumetricFog: selectedVolumetricFogMode() === "off",
@@ -502,6 +703,7 @@ async function optimizeSelectedPreset() {
       d3d12PsoCache: elements.d3d12PsoCacheToggle.checked,
       runtimePsoPrecaching: elements.runtimePsoPrecachingToggle.checked,
       gcSmoothing: elements.gcSmoothingToggle.checked,
+      installStrategy,
     });
     const fileNames = report.installed_files.map((file) => file.file_name).join(", ");
     showActionResult("success", "Success", `Installed ${fileNames}`, true);
@@ -517,6 +719,36 @@ async function optimizeSelectedPreset() {
   } finally {
     setBusy(false);
   }
+}
+
+function confirmOverwriteRisks() {
+  const riskyFiles = overwriteRiskFiles();
+  if (riskyFiles.length === 0) {
+    return Promise.resolve("replace");
+  }
+
+  const hasExternalSettings = riskyFiles.some((file) => file.has_external_settings);
+  const actions = hasExternalSettings
+    ? [
+        { id: "merge", label: "Merge", className: "primary-button" },
+        { id: "replace", label: "Use App Settings Only", className: "danger-button" },
+      ]
+    : [{ id: "replace", label: "Use App Settings Only", className: "danger-button" }];
+
+  return openConfirmModal({
+    title: "Custom INI files found",
+    description: hasExternalSettings
+      ? "There are already custom INI files with settings this app does not manage. You can merge the app settings into the existing files or replace them with only the app settings."
+      : "There are already custom INI files, but they only contain settings this app manages. Continue with the selected app settings or cancel.",
+    actions,
+  });
+}
+
+function overwriteRiskFiles() {
+  return state.preview.filter(
+    (file) =>
+      file.has_external_settings || ["modified", "untracked"].includes(file.modification_state),
+  );
 }
 
 async function loadBackups() {
@@ -585,7 +817,12 @@ async function resetToVanilla() {
     return;
   }
 
-  const confirmed = await openConfirmModal();
+  const confirmed = await openConfirmModal({
+    title: "Reset to Vanilla?",
+    description:
+      "This removes Engine.ini, Game.ini and Scalability.ini from the selected game config folder. A backup is created first.",
+    actions: [{ id: "reset", label: "Reset to Vanilla", className: "danger-button" }],
+  });
   if (!confirmed) {
     return;
   }
@@ -615,12 +852,15 @@ async function resetToVanilla() {
   }
 }
 
-function openConfirmModal() {
+function openConfirmModal({ title, description, actions }) {
   if (confirmModalResolve) {
     return Promise.resolve(false);
   }
 
   confirmModalPreviousFocus = document.activeElement;
+  elements.confirmModalTitle.textContent = title;
+  elements.confirmModalDescription.textContent = description;
+  renderConfirmModalActions(actions);
   elements.confirmModal.hidden = false;
   document.body.classList.add("modal-open");
 
@@ -633,7 +873,30 @@ function openConfirmModal() {
   });
 }
 
-function closeConfirmModal(confirmed) {
+function renderConfirmModalActions(actions) {
+  for (const button of confirmModalActionButtons) {
+    button.remove();
+  }
+  confirmModalActionButtons = [];
+
+  const [primaryAction, ...extraActions] = actions;
+  elements.confirmModalConfirm.textContent = primaryAction.label;
+  elements.confirmModalConfirm.className = primaryAction.className;
+  elements.confirmModalConfirm.dataset.modalAction = primaryAction.id;
+
+  for (const action of extraActions) {
+    const button = document.createElement("button");
+    button.className = action.className;
+    button.type = "button";
+    button.textContent = action.label;
+    button.dataset.modalAction = action.id;
+    button.addEventListener("click", () => closeConfirmModal(action.id));
+    elements.confirmModalConfirm.before(button);
+    confirmModalActionButtons.push(button);
+  }
+}
+
+function closeConfirmModal(result) {
   if (!confirmModalResolve) {
     return;
   }
@@ -642,17 +905,21 @@ function closeConfirmModal(confirmed) {
   confirmModalResolve = null;
   elements.confirmModal.hidden = true;
   document.body.classList.remove("modal-open");
+  for (const button of confirmModalActionButtons) {
+    button.remove();
+  }
+  confirmModalActionButtons = [];
 
   if (confirmModalPreviousFocus instanceof HTMLElement) {
     confirmModalPreviousFocus.focus();
   }
   confirmModalPreviousFocus = null;
-  resolve(confirmed);
+  resolve(result);
 }
 
 function renderDiagnostics() {
   elements.presetRootValue.textContent = state.presetRoot || "Unknown";
-  elements.selectedPresetValue.textContent = state.selectedPresetId || "None";
+  elements.selectedPresetValue.textContent = selectedPresetLabel();
   elements.recommendedPresetValue.textContent = state.recommendation?.preset_id || "None";
   elements.selectedTargetValue.textContent = state.targetDir || "None";
 }
@@ -783,6 +1050,7 @@ function renderStreamingState() {
   elements.streamingStatus.textContent = enabled ? "Streaming On" : "Streaming Off";
   elements.streamingStatus.className = enabled ? "pill good" : "pill";
   elements.presetPanel.classList.toggle("streaming-disabled", !enabled);
+  renderCustomPoolState(false);
 }
 
 function renderPageChrome() {
@@ -814,9 +1082,20 @@ function pickDefaultPreset(presets) {
 function setBusy(busy) {
   state.busy = busy;
   elements.refreshButton.disabled = busy;
-  elements.optimizeButton.disabled = busy || state.preview.length === 0 || !hasTauriApi();
   elements.loadBackupsButton.disabled = busy;
   elements.resetVanillaButton.disabled = busy || !hasTauriApi();
+  updateActionButtons();
+}
+
+function updateActionButtons() {
+  elements.optimizeButton.disabled =
+    state.busy || state.preview.length === 0 || !hasTauriApi() || !customPoolSelectionValid();
+  elements.copyIniButton.disabled =
+    state.busy ||
+    !hasTauriApi() ||
+    !selectedPresetIdForCommand() ||
+    !selectedOptimizerChangesEnabled() ||
+    !customPoolSelectionValid();
 }
 
 function showActionResult(kind, statusText, detailText, autoHide) {
@@ -855,6 +1134,31 @@ function formatPool(value) {
   return typeof value === "number" ? `${value} MB` : "Not set";
 }
 
+function formatModificationState(stateValue) {
+  const className = modificationStateClass(stateValue);
+  return `<span class="${className}">${escapeHtml(modificationStateLabel(stateValue))}</span>`;
+}
+
+function modificationStateLabel(stateValue) {
+  switch (stateValue) {
+    case "missing":
+      return "New";
+    case "unchanged":
+      return "Clean";
+    case "untracked":
+      return "Untracked";
+    case "modified":
+      return "Modified";
+    default:
+      return "Unknown";
+  }
+}
+
+function modificationStateClass(stateValue) {
+  const tone = ["modified", "untracked"].includes(stateValue) ? "warn" : "neutral";
+  return `file-state ${tone}`;
+}
+
 function formatTweaks(file) {
   const labels = [];
   if (file.will_apply_balanced_performance_tweaks) {
@@ -882,6 +1186,10 @@ function formatTweaks(file) {
 }
 
 function emptyPreviewMessage() {
+  if (!customPoolSelectionValid()) {
+    return customPoolValidationMessage();
+  }
+
   if (
     !streamingFixesEnabled() &&
     !elements.balancedPerformanceToggle.checked &&
@@ -923,6 +1231,141 @@ function experimentalEngineTweaksEnabled() {
     elements.runtimePsoPrecachingToggle.checked ||
     elements.gcSmoothingToggle.checked
   );
+}
+
+function selectedOptimizerChangesEnabled() {
+  return (
+    streamingFixesEnabled() ||
+    elements.balancedPerformanceToggle.checked ||
+    selectedVolumetricFogMode() !== "normal" ||
+    experimentalEngineTweaksEnabled() ||
+    elements.skipIntroVideosToggle.checked
+  );
+}
+
+function isCustomPresetSelected() {
+  return state.selectedPresetId === CUSTOM_PRESET_ID;
+}
+
+function selectedPresetIdForCommand() {
+  if (!isCustomPresetSelected()) {
+    return state.selectedPresetId;
+  }
+
+  return customPresetTemplate()?.id ?? "";
+}
+
+function customPresetTemplate() {
+  if (state.presets.length === 0) {
+    return null;
+  }
+
+  const poolMb = selectedCustomPoolMb() ?? state.customPoolMb;
+  return state.presets.reduce((closest, preset) => {
+    const currentDistance = Math.abs(preset.pool_mb - poolMb);
+    const closestDistance = Math.abs(closest.pool_mb - poolMb);
+    return currentDistance < closestDistance ? preset : closest;
+  }, state.presets[0]);
+}
+
+function selectedCustomPoolMb() {
+  if (!isCustomPresetSelected() || !streamingFixesEnabled()) {
+    return null;
+  }
+
+  const value = Number(elements.customPoolInput.value);
+  if (!Number.isInteger(value)) {
+    return null;
+  }
+
+  if (value < MIN_CUSTOM_POOL_MB || value > MAX_CUSTOM_POOL_MB) {
+    return null;
+  }
+
+  if (value % CUSTOM_POOL_STEP_MB !== 0) {
+    return null;
+  }
+
+  return value;
+}
+
+function customPoolSelectionValid() {
+  return !isCustomPresetSelected() || !streamingFixesEnabled() || selectedCustomPoolMb() !== null;
+}
+
+function customPoolValidationMessage() {
+  if (!isCustomPresetSelected() || !streamingFixesEnabled()) {
+    return "";
+  }
+
+  const inputValue = elements.customPoolInput.value.trim();
+  if (!inputValue) {
+    return "Enter a pool size in MB.";
+  }
+
+  const value = Number(inputValue);
+  if (!Number.isInteger(value)) {
+    return "Use a whole MB value.";
+  }
+
+  if (value < MIN_CUSTOM_POOL_MB || value > MAX_CUSTOM_POOL_MB) {
+    return `Use a value between ${MIN_CUSTOM_POOL_MB} and ${MAX_CUSTOM_POOL_MB} MB.`;
+  }
+
+  if (value % CUSTOM_POOL_STEP_MB !== 0) {
+    return `Use ${CUSTOM_POOL_STEP_MB} MB steps.`;
+  }
+
+  return "";
+}
+
+function renderCustomPoolState(syncInputValue) {
+  const customSelected = isCustomPresetSelected();
+  elements.customPoolPanel.hidden = !customSelected;
+  elements.customPoolInput.disabled = !streamingFixesEnabled();
+
+  if (syncInputValue) {
+    elements.customPoolInput.value = String(state.customPoolMb);
+  }
+
+  const validationMessage = customPoolValidationMessage();
+  elements.customPoolHint.textContent =
+    validationMessage ||
+    `Use a value between ${MIN_CUSTOM_POOL_MB} and ${MAX_CUSTOM_POOL_MB} MB. ${CUSTOM_POOL_STEP_MB} MB steps are recommended.`;
+  elements.customPoolHint.className = validationMessage
+    ? "custom-pool-hint bad"
+    : "custom-pool-hint";
+}
+
+function customPoolLabel() {
+  const poolMb = isCustomPresetSelected()
+    ? (selectedCustomPoolMb() ?? state.customPoolMb)
+    : state.customPoolMb;
+  return `${poolMb} MB pool`;
+}
+
+function selectedPresetLabel() {
+  if (isCustomPresetSelected()) {
+    return `Custom / ${customPoolLabel()}`;
+  }
+
+  const preset = state.presets.find((item) => item.id === state.selectedPresetId);
+  return preset?.label ?? (state.selectedPresetId || "None");
+}
+
+function selectedIniContentArgs() {
+  return {
+    presetId: selectedPresetIdForCommand(),
+    customPoolMb: selectedCustomPoolMb(),
+    streamingFixes: streamingFixesEnabled(),
+    balancedPerformance: elements.balancedPerformanceToggle.checked,
+    disableVolumetricFog: selectedVolumetricFogMode() === "off",
+    lowVolumetricFog: selectedVolumetricFogMode() === "low",
+    skipIntroVideos: elements.skipIntroVideosToggle.checked,
+    d3d12PsoCache: elements.d3d12PsoCacheToggle.checked,
+    runtimePsoPrecaching: elements.runtimePsoPrecachingToggle.checked,
+    gcSmoothing: elements.gcSmoothingToggle.checked,
+  };
 }
 
 function recommendedBadgeMarkup() {
@@ -989,6 +1432,7 @@ async function demoInvoke(command, args) {
 
   if (command === "preview_install") {
     const preset = samplePresets.find((item) => item.id === args.presetId) ?? samplePresets[2];
+    const previewPoolMb = args.customPoolMb ?? preset.pool_mb;
     const files = [];
     if (
       args.streamingFixes ||
@@ -1001,8 +1445,10 @@ async function demoInvoke(command, args) {
       files.push({
         file_name: "Engine.ini",
         target_exists: false,
+        modification_state: "missing",
+        has_external_settings: false,
         current_pool_mb: null,
-        preset_pool_mb: args.streamingFixes ? preset.pool_mb : null,
+        preset_pool_mb: args.streamingFixes ? previewPoolMb : null,
         will_backup: false,
         will_set_read_only: args.lockEngine,
         will_apply_balanced_performance_tweaks: false,
@@ -1019,8 +1465,10 @@ async function demoInvoke(command, args) {
       files.push({
         file_name: "Scalability.ini",
         target_exists: false,
+        modification_state: "missing",
+        has_external_settings: false,
         current_pool_mb: null,
-        preset_pool_mb: args.streamingFixes ? preset.pool_mb : null,
+        preset_pool_mb: args.streamingFixes ? previewPoolMb : null,
         will_backup: false,
         will_set_read_only: args.lockScalability,
         will_apply_balanced_performance_tweaks: args.balancedPerformance,
@@ -1037,6 +1485,8 @@ async function demoInvoke(command, args) {
       files.push({
         file_name: "Game.ini",
         target_exists: false,
+        modification_state: "missing",
+        has_external_settings: false,
         current_pool_mb: null,
         preset_pool_mb: null,
         will_backup: false,

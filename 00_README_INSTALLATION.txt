@@ -50,7 +50,7 @@ PRESET GUIDE
 12 GB VRAM  -> 6144 MB preset
 16 GB VRAM  -> 8192 MB preset
 20 GB VRAM  -> 10240 MB preset
-24 GB VRAM  -> 12288 MB preset
+24+ GB VRAM -> 12288 MB preset
 
 If you still see streaming stutter and your VRAM usage has several GB of
 headroom, try one preset higher.

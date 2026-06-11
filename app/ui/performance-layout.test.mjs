@@ -17,7 +17,7 @@ const performanceHeader = extractBetween(
 );
 const overdoseFeatureRow = extractFeatureRow(
   performanceView,
-  '<span class="performance-title">Opt-in Overdose quality caps</span>',
+  '<span class="performance-title">Overdose FPS Improvements</span>',
 );
 const fogFeatureRow = extractFeatureRow(
   performanceView,
@@ -37,9 +37,13 @@ assert.doesNotMatch(performanceHeader, /id="openPerformanceComparisonButton"/);
 assert.doesNotMatch(performanceHeader, /Overdose only/);
 assert.match(overdoseFeatureRow, /id="openPerformanceComparisonButton"/);
 assert.match(overdoseFeatureRow, /Visual Comparison/);
-assert.match(overdoseFeatureRow, /Overdose only/);
 assert.match(performanceView, /class="feature-row with-detail"/);
-assert.match(performanceView, /<span class="streaming-detail-title">Overdose profile caps<\/span>/);
+assert.doesNotMatch(performanceView, /class="streaming-detail-title"/);
+assert.doesNotMatch(performanceView, /class="streaming-detail-heading"/);
+assert.ok(
+  performanceView.match(/<div class="streaming-feature-detail">\s*<p>/g)?.length >= 2,
+  "Performance detail boxes start directly with explanatory text",
+);
 assert.match(performanceView, /id="volumetricFogModeControl"/);
 assert.match(performanceView, /id="volumetricFogModeNormal"/);
 assert.match(performanceView, /id="volumetricFogModeLow"/);
@@ -50,7 +54,6 @@ assert.match(performanceView, /<span class="performance-title">Volumetric Fog<\/
 assert.match(performanceView, /<span class="fog-mode-recommendation">Recommended<\/span>/);
 assert.match(performanceView, /<span>Best balance<\/span>/);
 assert.doesNotMatch(fogFeatureRow, /<span>Engine\.ini<\/span>/);
-assert.match(performanceView, /<span class="streaming-detail-title">Volumetric Fog mode<\/span>/);
 assert.doesNotMatch(performanceView, /id="disableVolumetricFogToggle"/);
 assert.doesNotMatch(performanceView, /id="lowVolumetricFogToggle"/);
 assert.doesNotMatch(performanceView, /class="panel comparison-panel"/);
@@ -64,6 +67,31 @@ assert.doesNotMatch(performanceView, /id="gcSmoothingToggle"/);
 assert.match(html, /id="comparisonGalleryModal"/);
 assert.match(html, /id="comparisonGalleryModalClose"/);
 assert.match(html, /id="performanceComparisonGallery"/);
+assert.match(html, /id="customPoolPanel"/);
+assert.match(html, /id="customPoolInput"/);
+assert.match(html, /id="customPoolHint"/);
+assert.match(html, /id="copyIniButton"/);
+assert.match(html, /id="optimizeButton"[\s\S]*id="copyIniButton"/);
+assert.match(html, /id="iniCopyModal"/);
+assert.match(html, /id="iniCopyFileList"/);
+assert.match(html, /<th>Tracking<\/th>/);
+assert.match(mainJs, /function confirmOverwriteRisks\(\)/);
+assert.match(mainJs, /There are already custom INI files/);
+assert.match(mainJs, /Use App Settings Only/);
+assert.match(mainJs, /function openIniCopyModal\(\)/);
+assert.match(mainJs, /function copyIniFileContent\(/);
+assert.match(mainJs, /CUSTOM_PRESET_ID/);
+assert.match(mainJs, /function selectedCustomPoolMb\(\)/);
+assert.match(mainJs, /ini_file_contents/);
+assert.match(mainJs, /customPoolMb/);
+assert.match(mainJs, /navigator\.clipboard\.writeText/);
+assert.match(mainJs, /has_external_settings/);
+assert.match(
+  mainJs,
+  /function overwriteRiskFiles\(\)\s*\{[\s\S]*?file\.has_external_settings[\s\S]*?\n\}/,
+);
+assert.match(mainJs, /installStrategy/);
+assert.match(mainJs, /modification_state/);
 assert.match(css, /#performanceView\.view\.active\s*\{[^}]*align-content:\s*stretch;/s);
 assert.match(css, /#performanceView\.view\.active\s*\{[^}]*overflow:\s*hidden;/s);
 assert.match(css, /#performanceView \.performance-panel\s*\{[^}]*align-self:\s*stretch;/s);
@@ -74,6 +102,7 @@ assert.match(css, /\.feature-actions\s*\{/);
 assert.match(css, /\.segmented-control label\.recommended > span\s*\{[^}]*#2c8f6d/s);
 assert.match(css, /\.fog-mode-recommendation\s*\{[^}]*#1d7658/s);
 assert.match(css, /\.modal-dialog\.comparison-gallery-modal-dialog\s*\{/);
+assert.match(css, /\.file-state\.warn\s*\{/);
 assert.match(css, /\.comparison-gallery\s*\{[^}]*display:\s*grid;/s);
 assert.match(css, /\.comparison-gallery\s*\{[^}]*grid-template-columns:\s*repeat\(auto-fit,\s*minmax\(240px,\s*1fr\)\);/s);
 assert.match(css, /\.comparison-gallery\s*\{[^}]*overflow:\s*auto;/s);

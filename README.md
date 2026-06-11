@@ -76,7 +76,7 @@ See `docs/desktop-app.md` for architecture notes.
 12 GB VRAM  -> 6144 MB
 16 GB VRAM  -> 8192 MB
 20 GB VRAM  -> 10240 MB
-24 GB VRAM  -> 12288 MB
+24+ GB VRAM -> 12288 MB
 ```
 
 If streaming stutter remains and your VRAM usage has several GB of headroom, try

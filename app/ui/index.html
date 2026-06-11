@@ -74,10 +74,6 @@
                   </span>
                 </label>
                 <div class="streaming-feature-detail">
-                  <div class="streaming-detail-heading">
-                    <span class="streaming-detail-title">Streaming pool write</span>
-                    <span class="pill">Config preset</span>
-                  </div>
                   <p>
                     Sets Unreal texture streaming pool values in Engine.ini and Scalability.ini to
                     match the selected VRAM class.
@@ -95,6 +91,23 @@
                 </div>
               </div>
               <div class="preset-grid" id="presetGrid"></div>
+              <div class="custom-pool-panel" id="customPoolPanel" hidden>
+                <label class="custom-pool-label" for="customPoolInput">Custom pool size</label>
+                <div class="custom-pool-input-row">
+                  <input
+                    id="customPoolInput"
+                    type="number"
+                    min="512"
+                    max="65536"
+                    step="256"
+                    inputmode="numeric"
+                  />
+                  <span class="custom-pool-unit">MB</span>
+                </div>
+                <p class="custom-pool-hint" id="customPoolHint">
+                  Use a value between 512 and 65536 MB. 256 MB steps are recommended.
+                </p>
+              </div>
               <div class="recommendation-summary" id="recommendationSummary">
                 Hardware recommendation unavailable.
               </div>
@@ -119,10 +132,6 @@
                     </span>
                   </label>
                   <div class="streaming-feature-detail">
-                    <div class="streaming-detail-heading">
-                      <span class="streaming-detail-title">D3D12 pipeline cache</span>
-                      <span class="pill warn">Spike test</span>
-                    </div>
                     <p>
                       Enables D3D12 pipeline disk caches so repeated pipeline creation work can be
                       reused across runs.
@@ -155,10 +164,6 @@
                     </span>
                   </label>
                   <div class="streaming-feature-detail">
-                    <div class="streaming-detail-heading">
-                      <span class="streaming-detail-title">Runtime PSO work</span>
-                      <span class="pill warn">Stutter test</span>
-                    </div>
                     <p>
                       Allows Unreal runtime PSO precaching and async pipeline compilation to move
                       some pipeline work away from visible frames.
@@ -191,10 +196,6 @@
                     </span>
                   </label>
                   <div class="streaming-feature-detail">
-                    <div class="streaming-detail-heading">
-                      <span class="streaming-detail-title">Garbage collection timing</span>
-                      <span class="pill warn">Frame-time test</span>
-                    </div>
                     <p>
                       Adjusts Unreal garbage collection timing and threading settings to test
                       whether object cleanup spikes become less visible.
@@ -229,7 +230,7 @@
                 <label class="performance-toggle">
                   <input id="balancedPerformanceToggle" type="checkbox" />
                   <span class="performance-copy">
-                    <span class="performance-title">Opt-in Overdose quality caps</span>
+                    <span class="performance-title">Overdose FPS Improvements</span>
                     <span class="performance-description">
                       Conservative Scalability.ini tweaks for the Overdose profile without disabling
                       Lumen, Nanite or virtual shadows.
@@ -251,10 +252,6 @@
                   </span>
                 </label>
                 <div class="streaming-feature-detail">
-                  <div class="streaming-detail-heading">
-                    <span class="streaming-detail-title">Overdose profile caps</span>
-                    <span class="pill warn">Overdose only</span>
-                  </div>
                   <p>
                     Applies conservative Scalability.ini caps only to the Overdose profile. The goal
                     is higher FPS with minimal visible quality loss.
@@ -327,10 +324,6 @@
                   </span>
                 </div>
                 <div class="streaming-feature-detail">
-                  <div class="streaming-detail-heading">
-                    <span class="streaming-detail-title">Volumetric Fog mode</span>
-                    <span class="pill warn">Low recommended</span>
-                  </div>
                   <p>
                     Low keeps the effect enabled and reduces its internal resolution. Off disables
                     volumetric fog completely and is only worth it when the small extra FPS gain is
@@ -420,6 +413,7 @@
               <thead>
                 <tr>
                   <th>File</th>
+                  <th>Tracking</th>
                   <th>Current pool</th>
                   <th>Preset pool</th>
                   <th>Tweaks</th>
@@ -433,6 +427,9 @@
           <div class="action-row">
             <div class="action-feedback">
               <button class="primary-button" id="optimizeButton" type="button">Optimize</button>
+              <button class="secondary-button" id="copyIniButton" type="button">
+                Copy &amp; Paste
+              </button>
               <span class="action-status" id="optimizeStatus" aria-live="polite" hidden></span>
             </div>
             <div class="last-result" id="lastResult" hidden>No changes applied</div>
@@ -536,6 +533,31 @@
           <button class="danger-button" id="confirmModalConfirm" type="button">
             Reset to Vanilla
           </button>
+        </div>
+      </section>
+    </div>
+
+    <div class="modal-layer ini-copy-modal-layer" id="iniCopyModal" hidden>
+      <section
+        class="modal-dialog ini-copy-modal-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="iniCopyModalTitle"
+        aria-describedby="iniCopyModalDescription"
+      >
+        <div class="modal-header comparison-modal-header">
+          <div>
+            <h2 id="iniCopyModalTitle">Copy INI Settings</h2>
+            <p id="iniCopyModalDescription">
+              Copy the generated app settings and paste them into your own INI files manually.
+            </p>
+          </div>
+          <button class="secondary-button compact" id="iniCopyModalClose" type="button">
+            Close
+          </button>
+        </div>
+        <div class="ini-copy-modal-body">
+          <div class="ini-copy-file-list" id="iniCopyFileList"></div>
         </div>
       </section>
     </div>

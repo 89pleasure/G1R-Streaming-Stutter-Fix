@@ -1,5 +1,6 @@
 const PREFERENCES_KEY = "g1r-optimizer.ui-preferences.v1";
 const VOLUMETRIC_FOG_MODES = new Set(["normal", "low", "off"]);
+const DEFAULT_CUSTOM_POOL_MB = 12288;
 
 const DEFAULT_UI_PREFERENCES = {
   balancedPerformance: false,
@@ -12,6 +13,7 @@ const DEFAULT_UI_PREFERENCES = {
   lockEngine: true,
   lockGame: true,
   lockScalability: true,
+  customPoolMb: DEFAULT_CUSTOM_POOL_MB,
   selectedPresetId: "",
   targetDir: "",
 };
@@ -55,6 +57,10 @@ export function loadUiPreferences(storage = window.localStorage) {
     lockScalability: booleanPreference(
       storedPreferences.lockScalability,
       DEFAULT_UI_PREFERENCES.lockScalability,
+    ),
+    customPoolMb: numberPreference(
+      storedPreferences.customPoolMb,
+      DEFAULT_UI_PREFERENCES.customPoolMb,
     ),
     selectedPresetId: stringPreference(
       storedPreferences.selectedPresetId,
@@ -113,6 +119,10 @@ function loadUiPreferencesFromObject(preferences) {
       preferences.lockScalability,
       DEFAULT_UI_PREFERENCES.lockScalability,
     ),
+    customPoolMb: numberPreference(
+      preferences.customPoolMb,
+      DEFAULT_UI_PREFERENCES.customPoolMb,
+    ),
     selectedPresetId: stringPreference(
       preferences.selectedPresetId,
       DEFAULT_UI_PREFERENCES.selectedPresetId,
@@ -151,4 +161,8 @@ function volumetricFogModePreference(preferences) {
 
 function stringPreference(value, fallback) {
   return typeof value === "string" ? value : fallback;
+}
+
+function numberPreference(value, fallback) {
+  return Number.isFinite(value) ? value : fallback;
 }

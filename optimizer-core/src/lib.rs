@@ -6,8 +6,10 @@ mod recommendation;
 
 pub use hardware::{detect_hardware, GpuInfo, GpuVendor, HardwareConfidence, HardwareSnapshot};
 pub use installer::{
-    install_preset, list_backups, preview_install, reset_to_vanilla, restore_backup, BackupInfo,
-    FileInstallReport, FilePreview, InstallOptions, InstallReport, ResetReport, RestoreReport,
+    ini_file_contents, install_preset, install_preset_with_strategy, list_backups, preview_install,
+    reset_to_vanilla, restore_backup, BackupInfo, FileInstallReport, FileModificationState,
+    FilePreview, IniFileContent, InstallOptions, InstallReport, InstallStrategy, ResetReport,
+    RestoreReport,
 };
 pub use paths::{detect_config_paths, ConfigCandidate};
 pub use presets::{find_preset, list_presets, Preset};

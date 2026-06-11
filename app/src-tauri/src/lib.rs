@@ -1,10 +1,11 @@
 use optimizer_core::{
-    detect_config_paths, detect_hardware, install_preset as core_install_preset,
-    list_backups as core_list_backups, list_presets, preview_install as core_preview_install,
-    recommend_preset_for_hardware, reset_to_vanilla as core_reset_to_vanilla,
-    restore_backup as core_restore_backup, BackupInfo, ConfigCandidate, FileInstallReport,
-    FilePreview, GpuInfo, GpuVendor, HardwareConfidence, HardwareSnapshot, InstallOptions,
-    InstallReport, Preset, PresetRecommendation, ResetReport, RestoreReport,
+    detect_config_paths, detect_hardware, ini_file_contents as core_ini_file_contents,
+    install_preset_with_strategy as core_install_preset, list_backups as core_list_backups,
+    list_presets, preview_install as core_preview_install, recommend_preset_for_hardware,
+    reset_to_vanilla as core_reset_to_vanilla, restore_backup as core_restore_backup, BackupInfo,
+    ConfigCandidate, FileInstallReport, FileModificationState, FilePreview, GpuInfo, GpuVendor,
+    HardwareConfidence, HardwareSnapshot, IniFileContent, InstallOptions, InstallReport,
+    InstallStrategy, Preset, PresetRecommendation, ResetReport, RestoreReport,
 };
 use serde::Serialize;
 use std::env;
@@ -69,6 +70,8 @@ struct PresetRecommendationDto {
 struct FilePreviewDto {
     file_name: String,
     target_exists: bool,
+    modification_state: String,
+    has_external_settings: bool,
     current_pool_mb: Option<u32>,
     preset_pool_mb: Option<u32>,
     will_backup: bool,
@@ -80,6 +83,12 @@ struct FilePreviewDto {
     will_apply_runtime_pso_precaching: bool,
     will_apply_gc_smoothing: bool,
     will_skip_intro_videos: bool,
+}
+
+#[derive(Debug, Serialize)]
+struct IniFileContentDto {
+    file_name: String,
+    content: String,
 }
 
 #[derive(Debug, Serialize)]
@@ -149,6 +158,7 @@ fn preview_install(
     lock_engine: bool,
     lock_game: bool,
     lock_scalability: bool,
+    custom_pool_mb: Option<u32>,
     streaming_fixes: bool,
     balanced_performance: bool,
     disable_volumetric_fog: bool,
@@ -168,6 +178,7 @@ fn preview_install(
             lock_engine_ini: lock_engine,
             lock_game_ini: lock_game,
             lock_scalability_ini: lock_scalability,
+            custom_pool_mb,
             apply_streaming_fixes: streaming_fixes,
             apply_balanced_performance_tweaks: balanced_performance,
             apply_disable_volumetric_fog: disable_volumetric_fog,
@@ -184,13 +195,10 @@ fn preview_install(
 }
 
 #[tauri::command]
-fn install_preset(
+fn ini_file_contents(
     app: AppHandle,
     preset_id: String,
-    target_dir: String,
-    lock_engine: bool,
-    lock_game: bool,
-    lock_scalability: bool,
+    custom_pool_mb: Option<u32>,
     streaming_fixes: bool,
     balanced_performance: bool,
     disable_volumetric_fog: bool,
@@ -199,17 +207,16 @@ fn install_preset(
     d3d12_pso_cache: bool,
     runtime_pso_precaching: bool,
     gc_smoothing: bool,
-) -> Result<InstallReportDto, String> {
+) -> Result<Vec<IniFileContentDto>, String> {
     let preset_root = resolve_preset_root(&app)?;
-    let target_dir = parse_target_dir(&target_dir)?;
-    let report = core_install_preset(
+    let files = core_ini_file_contents(
         &preset_root,
         &preset_id,
-        &target_dir,
         InstallOptions {
-            lock_engine_ini: lock_engine,
-            lock_game_ini: lock_game,
-            lock_scalability_ini: lock_scalability,
+            lock_engine_ini: false,
+            lock_game_ini: false,
+            lock_scalability_ini: false,
+            custom_pool_mb,
             apply_streaming_fixes: streaming_fixes,
             apply_balanced_performance_tweaks: balanced_performance,
             apply_disable_volumetric_fog: disable_volumetric_fog,
@@ -219,6 +226,53 @@ fn install_preset(
             apply_runtime_pso_precaching: runtime_pso_precaching,
             apply_gc_smoothing: gc_smoothing,
         },
+    )
+    .map_err(to_error_string)?;
+
+    Ok(files.into_iter().map(IniFileContentDto::from).collect())
+}
+
+#[tauri::command]
+fn install_preset(
+    app: AppHandle,
+    preset_id: String,
+    target_dir: String,
+    lock_engine: bool,
+    lock_game: bool,
+    lock_scalability: bool,
+    custom_pool_mb: Option<u32>,
+    streaming_fixes: bool,
+    balanced_performance: bool,
+    disable_volumetric_fog: bool,
+    low_volumetric_fog: bool,
+    skip_intro_videos: bool,
+    d3d12_pso_cache: bool,
+    runtime_pso_precaching: bool,
+    gc_smoothing: bool,
+    install_strategy: String,
+) -> Result<InstallReportDto, String> {
+    let preset_root = resolve_preset_root(&app)?;
+    let target_dir = parse_target_dir(&target_dir)?;
+    let install_strategy = parse_install_strategy(&install_strategy)?;
+    let report = core_install_preset(
+        &preset_root,
+        &preset_id,
+        &target_dir,
+        InstallOptions {
+            lock_engine_ini: lock_engine,
+            lock_game_ini: lock_game,
+            lock_scalability_ini: lock_scalability,
+            custom_pool_mb,
+            apply_streaming_fixes: streaming_fixes,
+            apply_balanced_performance_tweaks: balanced_performance,
+            apply_disable_volumetric_fog: disable_volumetric_fog,
+            apply_low_volumetric_fog: low_volumetric_fog,
+            apply_skip_intro_videos: skip_intro_videos,
+            apply_d3d12_pso_cache: d3d12_pso_cache,
+            apply_runtime_pso_precaching: runtime_pso_precaching,
+            apply_gc_smoothing: gc_smoothing,
+        },
+        install_strategy,
     )
     .map_err(to_error_string)?;
 
@@ -252,6 +306,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             get_app_state,
             preview_install,
+            ini_file_contents,
             install_preset,
             list_backups,
             restore_backup,
@@ -370,6 +425,8 @@ impl From<FilePreview> for FilePreviewDto {
         Self {
             file_name: preview.file_name,
             target_exists: preview.target_exists,
+            modification_state: modification_state_to_string(preview.modification_state),
+            has_external_settings: preview.has_external_settings,
             current_pool_mb: preview.current_pool_mb,
             preset_pool_mb: preview.preset_pool_mb,
             will_backup: preview.will_backup,
@@ -381,6 +438,15 @@ impl From<FilePreview> for FilePreviewDto {
             will_apply_runtime_pso_precaching: preview.will_apply_runtime_pso_precaching,
             will_apply_gc_smoothing: preview.will_apply_gc_smoothing,
             will_skip_intro_videos: preview.will_skip_intro_videos,
+        }
+    }
+}
+
+impl From<IniFileContent> for IniFileContentDto {
+    fn from(file: IniFileContent) -> Self {
+        Self {
+            file_name: file.file_name,
+            content: file.content,
         }
     }
 }
@@ -403,6 +469,24 @@ fn confidence_to_string(confidence: HardwareConfidence) -> String {
         HardwareConfidence::Low => "low",
     }
     .to_string()
+}
+
+fn modification_state_to_string(state: FileModificationState) -> String {
+    match state {
+        FileModificationState::Missing => "missing",
+        FileModificationState::Unchanged => "unchanged",
+        FileModificationState::Untracked => "untracked",
+        FileModificationState::Modified => "modified",
+    }
+    .to_string()
+}
+
+fn parse_install_strategy(value: &str) -> Result<InstallStrategy, String> {
+    match value {
+        "replace" => Ok(InstallStrategy::Replace),
+        "merge" => Ok(InstallStrategy::Merge),
+        _ => Err(format!("invalid install strategy '{value}'")),
+    }
 }
 
 impl From<FileInstallReport> for FileInstallReportDto {
