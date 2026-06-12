@@ -18,7 +18,7 @@ assert.doesNotMatch(optimizeStreamingView, /data-streaming-info=/);
 assert.doesNotMatch(optimizeStreamingView, /class="streaming-detail-title"/);
 assert.doesNotMatch(optimizeStreamingView, /class="streaming-detail-heading"/);
 assert.ok(
-  optimizeStreamingView.match(/<div class="streaming-feature-detail">\s*<p>/g)?.length >= 4,
+  optimizeStreamingView.match(/<div class="streaming-feature-detail">\s*<p(?:\s[^>]*)?>/g)?.length >= 4,
   "Optimize Streaming detail boxes start directly with explanatory text",
 );
 

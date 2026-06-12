@@ -1,5 +1,12 @@
 import { loadUiPreferences, saveUiPreferences } from "./preferences.js";
 import { performanceComparisonScenes } from "./performance-comparisons.js";
+import {
+  LANGUAGE_AUTO,
+  applyTranslationsToDocument,
+  createTranslator,
+  languageOptions,
+  resolveLanguage,
+} from "./i18n.js";
 
 const CUSTOM_PRESET_ID = "CUSTOM_POOL";
 const DEFAULT_CUSTOM_POOL_MB = 12288;
@@ -22,6 +29,8 @@ const state = {
   currentView: "optimizeStreaming",
   selectedComparisonSceneId: performanceComparisonScenes[0]?.id ?? "",
   comparisonPosition: 50,
+  languagePreference: LANGUAGE_AUTO,
+  language: "en",
   busy: false,
 };
 
@@ -36,18 +45,19 @@ const samplePresets = [
   { id: "24GB_VRAM_12288MB", label: "24+ GB VRAM / 12288 MB pool", vram_gb: 24, pool_mb: 12288 },
 ];
 
-const viewTitles = {
-  optimizeStreaming: "Optimize Streaming",
-  performance: "Performance Tweaks",
-  gameTweaks: "Game Tweaks",
-  backups: "Backups",
-  diagnostics: "Diagnostics",
-  settings: "Settings",
+const viewTitleKeys = {
+  optimizeStreaming: "views.optimizeStreaming",
+  performance: "views.performance",
+  gameTweaks: "views.gameTweaks",
+  backups: "views.backups",
+  diagnostics: "views.diagnostics",
+  settings: "views.settings",
 };
 
 const viewsWithPreview = new Set(["optimizeStreaming", "performance", "gameTweaks"]);
 
 const elements = {};
+let translate = createTranslator(state.language);
 let confirmModalResolve = null;
 let confirmModalPreviousFocus = null;
 let confirmModalActionButtons = [];
@@ -81,6 +91,7 @@ function bindElements() {
     "recommendationSummary",
     "candidateSelect",
     "targetInput",
+    "browseTargetButton",
     "pathStatus",
     "lockEngineToggle",
     "lockGameToggle",
@@ -120,6 +131,7 @@ function bindElements() {
     "loadBackupsButton",
     "resetVanillaButton",
     "backupList",
+    "languageSelect",
     "presetRootValue",
     "selectedPresetValue",
     "recommendedPresetValue",
@@ -138,8 +150,45 @@ function bindElements() {
   }
 }
 
+function populateLanguageSelect() {
+  elements.languageSelect.innerHTML = "";
+  for (const option of languageOptions) {
+    const languageOption = document.createElement("option");
+    languageOption.value = option.value;
+    elements.languageSelect.appendChild(languageOption);
+  }
+}
+
+function applyLanguagePreference(preference, options = {}) {
+  const { render = true } = options;
+  const supportedPreference = languageOptions.some((option) => option.value === preference)
+    ? preference
+    : LANGUAGE_AUTO;
+
+  state.languagePreference = supportedPreference;
+  state.language = resolveLanguage(supportedPreference);
+  translate = createTranslator(state.language);
+  document.documentElement.lang = state.language;
+  refreshLanguageSelect();
+  applyTranslationsToDocument(document, translate);
+
+  if (render) {
+    renderAll();
+  }
+}
+
+function refreshLanguageSelect() {
+  elements.languageSelect.value = state.languagePreference;
+  elements.languageSelect.querySelectorAll("option").forEach((option) => {
+    const languageOption = languageOptions.find((item) => item.value === option.value);
+    option.textContent = translate(languageOption?.labelKey ?? "language.auto");
+  });
+}
+
 function applyStoredPreferences() {
   const preferences = loadUiPreferences();
+  populateLanguageSelect();
+  applyLanguagePreference(preferences.language, { render: false });
   state.selectedPresetId = preferences.selectedPresetId;
   state.targetDir = preferences.targetDir;
   state.customPoolMb = preferences.customPoolMb;
@@ -170,6 +219,7 @@ function persistUiPreferences() {
     customPoolMb: state.customPoolMb,
     selectedPresetId: state.selectedPresetId,
     targetDir: state.targetDir,
+    language: state.languagePreference,
   });
 }
 
@@ -185,6 +235,10 @@ function bindEvents() {
   elements.resetVanillaButton.addEventListener("click", resetToVanilla);
   elements.copyIniButton.addEventListener("click", openIniCopyModal);
   elements.optimizeButton.addEventListener("click", optimizeSelectedPreset);
+  elements.languageSelect.addEventListener("change", () => {
+    applyLanguagePreference(elements.languageSelect.value, { render: true });
+    persistUiPreferences();
+  });
   elements.confirmModalCancel.addEventListener("click", () => closeConfirmModal(false));
   elements.confirmModalConfirm.addEventListener("click", () =>
     closeConfirmModal(elements.confirmModalConfirm.dataset.modalAction ?? true),
@@ -236,21 +290,17 @@ function bindEvents() {
     const candidate = state.candidates.find(
       (item) => item.path === elements.candidateSelect.value,
     );
-    state.targetDir = candidate?.path ?? elements.candidateSelect.value;
-    elements.targetInput.value = state.targetDir;
-    persistUiPreferences();
-    renderDiagnostics();
+    applyTargetDir(candidate?.path ?? elements.candidateSelect.value);
     refreshPreview();
     loadBackups();
   });
 
   elements.targetInput.addEventListener("input", () => {
-    state.targetDir = elements.targetInput.value;
-    persistUiPreferences();
-    renderPathStatus();
-    renderDiagnostics();
+    applyTargetDir(elements.targetInput.value);
     refreshPreviewDebounced();
   });
+
+  elements.browseTargetButton.addEventListener("click", browseTargetFolder);
 
   elements.customPoolInput.addEventListener("input", () => {
     const poolMb = selectedCustomPoolMb();
@@ -319,6 +369,29 @@ function bindEvents() {
   });
 }
 
+async function browseTargetFolder() {
+  if (!hasTauriApi() && !window.__TAURI__?.dialog?.open) {
+    appendLog(translate("logs.folderPickerUnavailable"));
+    return;
+  }
+
+  setBusy(true);
+  try {
+    const selectedFolder = await openTargetFolderDialog();
+    if (!selectedFolder || Array.isArray(selectedFolder)) {
+      return;
+    }
+
+    applyTargetDir(selectedFolder);
+    await refreshPreview();
+    await loadBackups();
+  } catch (error) {
+    appendLog(translate("logs.folderPickerFailed", { error }));
+  } finally {
+    setBusy(false);
+  }
+}
+
 async function loadAppState() {
   setBusy(true);
   try {
@@ -340,14 +413,16 @@ async function loadAppState() {
       state.targetDir = bestCandidate.path;
     }
 
-    elements.appStatus.textContent = "Preset data loaded";
-    elements.runtimeStatus.textContent = hasTauriApi() ? "Tauri desktop" : "Static preview";
+    elements.appStatus.textContent = translate("status.presetLoaded");
+    elements.runtimeStatus.textContent = hasTauriApi()
+      ? translate("runtime.tauri")
+      : translate("runtime.static");
     renderAll();
     await refreshPreview();
     await loadBackups();
   } catch (error) {
-    elements.appStatus.textContent = "Failed to load app state";
-    appendLog(`Load failed: ${error}`);
+    elements.appStatus.textContent = translate("status.failedLoad");
+    appendLog(translate("logs.loadFailed", { error }));
     renderAll();
   } finally {
     setBusy(false);
@@ -370,7 +445,7 @@ function renderAll() {
 }
 
 function renderPresets() {
-  elements.presetCount.textContent = `${state.presets.length + 1} presets`;
+  elements.presetCount.textContent = translate("preset.count", { count: state.presets.length + 1 });
   elements.presetGrid.innerHTML = "";
 
   state.presets.forEach((preset) => {
@@ -389,7 +464,7 @@ function renderPresets() {
         <span class="preset-vram">${preset.vram_gb} GB</span>
         ${isRecommended ? recommendedBadgeMarkup() : ""}
       </span>
-      <span class="preset-pool">${preset.pool_mb} MB pool</span>
+        <span class="preset-pool">${escapeHtml(poolLabel(preset.pool_mb))}</span>
     `;
     button.disabled = !streamingFixesEnabled();
     button.addEventListener("click", () => {
@@ -414,7 +489,7 @@ function renderPresets() {
     .join(" ");
   customButton.innerHTML = `
     <span class="preset-heading-row">
-      <span class="preset-vram">Custom</span>
+      <span class="preset-vram">${escapeHtml(translate("preset.custom"))}</span>
     </span>
     <span class="preset-pool">${customPoolLabel()}</span>
   `;
@@ -435,14 +510,14 @@ function renderPresets() {
 function renderRecommendationSummary() {
   if (!streamingFixesEnabled()) {
     elements.recommendationSummary.textContent =
-      "Streaming fixes are off. The selected preset is kept, but it will not be installed.";
+      translate("recommendation.whenOff");
     elements.recommendationSummary.className = "recommendation-summary muted";
     return;
   }
 
   if (isCustomPresetSelected()) {
     elements.recommendationSummary.textContent =
-      "Custom pool size selected. The app will write the MB value from the custom field.";
+      translate("recommendation.custom");
     elements.recommendationSummary.className = "recommendation-summary";
     return;
   }
@@ -450,12 +525,12 @@ function renderRecommendationSummary() {
   const recommendation = state.recommendation;
   if (!recommendation) {
     elements.recommendationSummary.textContent =
-      "Hardware could not be detected reliably. Choose a preset manually.";
+      translate("recommendation.unknownHardware");
     elements.recommendationSummary.className = "recommendation-summary muted";
     return;
   }
 
-  elements.recommendationSummary.textContent = recommendation.reason;
+  elements.recommendationSummary.textContent = recommendationMessage(recommendation);
   elements.recommendationSummary.className = "recommendation-summary";
 }
 
@@ -465,13 +540,15 @@ function renderCandidates() {
   if (state.candidates.length === 0) {
     const option = document.createElement("option");
     option.value = "";
-    option.textContent = "No detected locations";
+    option.textContent = translate("candidate.noLocations");
     elements.candidateSelect.appendChild(option);
   } else {
     state.candidates.forEach((candidate) => {
       const option = document.createElement("option");
       option.value = candidate.path;
-      option.textContent = `${candidate.label} - ${candidate.exists ? "found" : "not found"}`;
+      option.textContent = `${candidate.label} - ${
+        candidate.exists ? translate("candidate.found") : translate("candidate.notFound")
+      }`;
       option.selected = candidate.path === state.targetDir;
       elements.candidateSelect.appendChild(option);
     });
@@ -480,19 +557,28 @@ function renderCandidates() {
   elements.targetInput.value = state.targetDir;
 }
 
+function applyTargetDir(targetDir) {
+  state.targetDir = targetDir;
+  elements.targetInput.value = state.targetDir;
+  elements.candidateSelect.value = state.targetDir;
+  persistUiPreferences();
+  renderPathStatus();
+  renderDiagnostics();
+}
+
 function renderPathStatus() {
   const candidate = state.candidates.find((item) => item.path === state.targetDir);
   if (!state.targetDir.trim()) {
-    elements.pathStatus.textContent = "Missing";
+    elements.pathStatus.textContent = translate("pathStatus.missing");
     elements.pathStatus.className = "pill bad";
   } else if (candidate?.exists) {
-    elements.pathStatus.textContent = "Found";
+    elements.pathStatus.textContent = translate("pathStatus.found");
     elements.pathStatus.className = "pill good";
   } else if (candidate) {
-    elements.pathStatus.textContent = "Can create";
+    elements.pathStatus.textContent = translate("pathStatus.canCreate");
     elements.pathStatus.className = "pill warn";
   } else {
-    elements.pathStatus.textContent = "Manual";
+    elements.pathStatus.textContent = translate("pathStatus.manual");
     elements.pathStatus.className = "pill";
   }
 }
@@ -500,7 +586,7 @@ function renderPathStatus() {
 async function refreshPreview() {
   if (!selectedPresetIdForCommand() || !state.targetDir.trim()) {
     state.preview = [];
-    elements.previewStatus.textContent = "Waiting";
+    elements.previewStatus.textContent = translate("status.waiting");
     elements.previewStatus.className = "pill";
     renderPreview();
     return;
@@ -508,7 +594,7 @@ async function refreshPreview() {
 
   if (!customPoolSelectionValid()) {
     state.preview = [];
-    elements.previewStatus.textContent = "Invalid";
+    elements.previewStatus.textContent = translate("status.invalid");
     elements.previewStatus.className = "pill bad";
     renderPreview();
     return;
@@ -531,13 +617,13 @@ async function refreshPreview() {
       runtimePsoPrecaching: elements.runtimePsoPrecachingToggle.checked,
       gcSmoothing: elements.gcSmoothingToggle.checked,
     });
-    elements.previewStatus.textContent = "Ready";
+    elements.previewStatus.textContent = translate("status.ready");
     elements.previewStatus.className = "pill good";
   } catch (error) {
     state.preview = [];
-    elements.previewStatus.textContent = "Error";
+    elements.previewStatus.textContent = translate("status.error");
     elements.previewStatus.className = "pill bad";
-    appendLog(`Preview failed: ${error}`);
+    appendLog(translate("logs.previewFailed", { error }));
   }
 
   renderPreview();
@@ -563,8 +649,8 @@ function renderPreview() {
       <td>${formatPool(file.current_pool_mb)}</td>
       <td>${formatPool(file.preset_pool_mb)}</td>
       <td>${formatTweaks(file)}</td>
-      <td>${file.will_backup ? "Yes" : "No"}</td>
-      <td>${file.will_set_read_only ? "Yes" : "No"}</td>
+      <td>${yesNo(file.will_backup)}</td>
+      <td>${yesNo(file.will_set_read_only)}</td>
     `;
     elements.previewRows.appendChild(row);
   });
@@ -593,8 +679,8 @@ async function openIniCopyModal() {
       elements.iniCopyModalClose.focus();
     });
   } catch (error) {
-    showActionResult("error", "Error", "Copy preview failed", false);
-    appendLog(`Copy preview failed: ${error}`);
+    showActionResult("error", translate("status.error"), translate("logs.copyPreviewFailed"), false);
+    appendLog(translate("logs.previewFailed", { error }));
   } finally {
     setBusy(false);
   }
@@ -606,7 +692,7 @@ function renderIniCopyModal() {
   if (state.iniCopyFiles.length === 0) {
     const empty = document.createElement("div");
     empty.className = "ini-copy-empty";
-    empty.textContent = "No INI settings selected.";
+    empty.textContent = translate("iniCopy.empty");
     elements.iniCopyFileList.appendChild(empty);
     return;
   }
@@ -624,7 +710,7 @@ function renderIniCopyModal() {
     const copyButton = document.createElement("button");
     copyButton.className = "secondary-button compact";
     copyButton.type = "button";
-    copyButton.textContent = "Copy";
+    copyButton.textContent = translate("actions.copy");
     copyButton.addEventListener("click", () => copyIniFileContent(file, copyButton));
 
     const textarea = document.createElement("textarea");
@@ -642,14 +728,14 @@ function renderIniCopyModal() {
 async function copyIniFileContent(file, button) {
   try {
     await navigator.clipboard.writeText(file.content);
-    button.textContent = "Copied";
-    appendLog(`Copied ${file.file_name} content to clipboard`);
+    button.textContent = translate("actions.copied");
+    appendLog(translate("logs.copySuccess", { fileName: file.file_name }));
     window.setTimeout(() => {
-      button.textContent = "Copy";
+      button.textContent = translate("actions.copy");
     }, 1800);
   } catch (error) {
-    button.textContent = "Failed";
-    appendLog(`Copy failed for ${file.file_name}: ${error}`);
+    button.textContent = translate("actions.failed");
+    appendLog(translate("logs.copyFailed", { fileName: file.file_name, error }));
   }
 }
 
@@ -705,17 +791,26 @@ async function optimizeSelectedPreset() {
       gcSmoothing: elements.gcSmoothingToggle.checked,
       installStrategy,
     });
-    const fileNames = report.installed_files.map((file) => file.file_name).join(", ");
-    showActionResult("success", "Success", `Installed ${fileNames}`, true);
-    appendLog(`Installed ${report.preset_id} to ${report.target_dir}`);
+    showActionResult(
+      "success",
+      translate("status.success"),
+      translate("logs.installSuccess", {
+        presetId: report.preset_id,
+        targetDir: report.target_dir,
+      }),
+      true,
+    );
+    appendLog(
+      translate("logs.installSuccess", { presetId: report.preset_id, targetDir: report.target_dir }),
+    );
     if (report.backup_dir) {
-      appendLog(`Backup created at ${report.backup_dir}`);
+      appendLog(translate("logs.backupCreated", { path: report.backup_dir }));
     }
     await refreshPreview();
     await loadBackups();
   } catch (error) {
-    showActionResult("error", "Error", "Install failed", false);
-    appendLog(`Install failed: ${error}`);
+    showActionResult("error", translate("status.error"), translate("result.installFailed"), false);
+    appendLog(translate("logs.installFailed", { error }));
   } finally {
     setBusy(false);
   }
@@ -730,16 +825,26 @@ function confirmOverwriteRisks() {
   const hasExternalSettings = riskyFiles.some((file) => file.has_external_settings);
   const actions = hasExternalSettings
     ? [
-        { id: "merge", label: "Merge", className: "primary-button" },
-        { id: "replace", label: "Use App Settings Only", className: "danger-button" },
+        { id: "merge", label: translate("actions.merge"), className: "primary-button" },
+        {
+          id: "replace",
+          label: translate("actions.useAppSettingsOnly"),
+          className: "danger-button",
+        },
       ]
-    : [{ id: "replace", label: "Use App Settings Only", className: "danger-button" }];
+    : [
+        {
+          id: "replace",
+          label: translate("actions.useAppSettingsOnly"),
+          className: "danger-button",
+        },
+      ];
 
   return openConfirmModal({
-    title: "Custom INI files found",
+    title: translate("modal.overwrite.title"),
     description: hasExternalSettings
-      ? "There are already custom INI files with settings this app does not manage. You can merge the app settings into the existing files or replace them with only the app settings."
-      : "There are already custom INI files, but they only contain settings this app manages. Continue with the selected app settings or cancel.",
+      ? translate("modal.overwrite.descriptionMerge")
+      : translate("modal.overwrite.descriptionManaged"),
     actions,
   });
 }
@@ -762,7 +867,7 @@ async function loadBackups() {
     state.backups = await invokeCommand("list_backups", { targetDir: state.targetDir });
   } catch (error) {
     state.backups = [];
-    appendLog(`Backup scan failed: ${error}`);
+    appendLog(translate("logs.backupScanFailed", { error }));
   }
 
   renderBackups();
@@ -774,7 +879,9 @@ function renderBackups() {
   if (state.backups.length === 0) {
     const empty = document.createElement("div");
     empty.className = "backup-row";
-    empty.innerHTML = `<div><div class="backup-title">No backups</div><div class="backup-meta">Backups appear after an existing config file is replaced.</div></div>`;
+    empty.innerHTML = `<div><div class="backup-title">${escapeHtml(
+      translate("backups.emptyTitle"),
+    )}</div><div class="backup-meta">${escapeHtml(translate("backups.emptyMeta"))}</div></div>`;
     elements.backupList.appendChild(empty);
     return;
   }
@@ -787,7 +894,9 @@ function renderBackups() {
         <div class="backup-title">${escapeHtml(backup.id)}</div>
         <div class="backup-meta">${escapeHtml(backup.files.join(", "))} - ${escapeHtml(backup.path)}</div>
       </div>
-      <button class="secondary-button compact" type="button">Restore</button>
+      <button class="secondary-button compact" type="button">${escapeHtml(
+        translate("actions.restore"),
+      )}</button>
     `;
     row.querySelector("button").addEventListener("click", () => restoreBackup(backup.id));
     elements.backupList.appendChild(row);
@@ -801,11 +910,16 @@ async function restoreBackup(backupId) {
       targetDir: state.targetDir,
       backupId,
     });
-    appendLog(`Restored ${report.restored_files.join(", ")} from ${report.backup_id}`);
+    appendLog(
+      translate("logs.restoreSuccess", {
+        files: report.restored_files.join(", "),
+        backupId: report.backup_id,
+      }),
+    );
     await refreshPreview();
     await loadBackups();
   } catch (error) {
-    appendLog(`Restore failed: ${error}`);
+    appendLog(translate("logs.restoreFailed", { error }));
   } finally {
     setBusy(false);
   }
@@ -813,15 +927,16 @@ async function restoreBackup(backupId) {
 
 async function resetToVanilla() {
   if (!state.targetDir.trim()) {
-    appendLog("Reset failed: no target folder selected");
+    appendLog(translate("logs.resetNoTarget"));
     return;
   }
 
   const confirmed = await openConfirmModal({
-    title: "Reset to Vanilla?",
-    description:
-      "This removes Engine.ini, Game.ini and Scalability.ini from the selected game config folder. A backup is created first.",
-    actions: [{ id: "reset", label: "Reset to Vanilla", className: "danger-button" }],
+    title: translate("modal.reset.title"),
+    description: translate("modal.reset.description"),
+    actions: [
+      { id: "reset", label: translate("actions.resetToVanilla"), className: "danger-button" },
+    ],
   });
   if (!confirmed) {
     return;
@@ -833,20 +948,25 @@ async function resetToVanilla() {
       targetDir: state.targetDir,
     });
     if (report.removed_files.length === 0) {
-      showActionResult("neutral", "", "No managed config files found", true);
-      appendLog("Reset to Vanilla found no managed config files");
+      showActionResult("neutral", "", translate("logs.resetNoFiles"), true);
+      appendLog(translate("logs.resetNoFiles"));
     } else {
-      showActionResult("neutral", "", `Removed ${report.removed_files.join(", ")}`, true);
-      appendLog(`Reset to Vanilla removed ${report.removed_files.join(", ")}`);
+      showActionResult(
+        "neutral",
+        "",
+        translate("logs.resetRemoved", { files: report.removed_files.join(", ") }),
+        true,
+      );
+      appendLog(translate("logs.resetRemoved", { files: report.removed_files.join(", ") }));
     }
     if (report.backup_dir) {
-      appendLog(`Backup created at ${report.backup_dir}`);
+      appendLog(translate("logs.backupCreated", { path: report.backup_dir }));
     }
     await refreshPreview();
     await loadBackups();
   } catch (error) {
-    showActionResult("error", "Error", "Reset failed", false);
-    appendLog(`Reset failed: ${error}`);
+    showActionResult("error", translate("status.error"), translate("result.resetFailed"), false);
+    appendLog(translate("logs.resetFailed", { error }));
   } finally {
     setBusy(false);
   }
@@ -918,17 +1038,18 @@ function closeConfirmModal(result) {
 }
 
 function renderDiagnostics() {
-  elements.presetRootValue.textContent = state.presetRoot || "Unknown";
+  elements.presetRootValue.textContent = state.presetRoot || translate("value.unknown");
   elements.selectedPresetValue.textContent = selectedPresetLabel();
-  elements.recommendedPresetValue.textContent = state.recommendation?.preset_id || "None";
-  elements.selectedTargetValue.textContent = state.targetDir || "None";
+  elements.recommendedPresetValue.textContent =
+    state.recommendation?.preset_id || translate("value.none");
+  elements.selectedTargetValue.textContent = state.targetDir || translate("value.none");
 }
 
 function renderPerformanceState() {
   const enabled =
     elements.balancedPerformanceToggle.checked ||
     selectedVolumetricFogMode() !== "normal";
-  elements.performanceStatus.textContent = enabled ? "On" : "Off";
+  elements.performanceStatus.textContent = enabled ? translate("status.on") : translate("status.off");
   elements.performanceStatus.className = enabled ? "pill warn" : "pill";
 }
 
@@ -943,15 +1064,19 @@ function renderPerformanceComparison() {
         <img
           class="comparison-thumb-image"
           src="${escapeHtml(comparisonScene.thumbnail.src)}"
-          alt="${escapeHtml(comparisonScene.thumbnail.alt)}"
+          alt="${escapeHtml(
+            translate("comparison.previewAlt", { scene: comparisonSceneLabel(comparisonScene) }),
+          )}"
           loading="lazy"
           decoding="async"
         />
-        <span class="comparison-thumb-action">Open comparison</span>
+        <span class="comparison-thumb-action">${escapeHtml(
+          translate("actions.openComparison"),
+        )}</span>
       </span>
       <span class="comparison-thumb-meta">
-        <span class="comparison-thumb-title">${escapeHtml(comparisonScene.label)}</span>
-        <span class="comparison-thumb-subtitle">Overdose vs Balanced (Overdose)</span>
+        <span class="comparison-thumb-title">${escapeHtml(comparisonSceneLabel(comparisonScene))}</span>
+        <span class="comparison-thumb-subtitle">${escapeHtml(translate("comparison.subtitle"))}</span>
       </span>
     `;
     button.addEventListener("click", () => {
@@ -965,15 +1090,19 @@ function renderPerformanceComparison() {
 
 function renderPerformanceComparisonModal() {
   const scene = selectedPerformanceComparisonScene();
-  elements.comparisonModalTitle.textContent = scene.label;
+  elements.comparisonModalTitle.textContent = comparisonSceneLabel(scene);
   elements.comparisonModalDescription.textContent =
-    "Overdose versus Balanced (Overdose), with the FPS overlay left visible.";
+    translate("comparison.modalDescription");
   elements.performanceComparisonBeforeImage.src = scene.before.src;
-  elements.performanceComparisonBeforeImage.alt = `${scene.label} ${scene.before.label}`;
+  elements.performanceComparisonBeforeImage.alt = `${comparisonSceneLabel(scene)} ${translate(
+    "comparison.beforeLabel",
+  )}`;
   elements.performanceComparisonAfterImage.src = scene.after.src;
-  elements.performanceComparisonAfterImage.alt = `${scene.label} ${scene.after.label}`;
-  elements.performanceComparisonBeforeLabel.textContent = scene.before.label;
-  elements.performanceComparisonAfterLabel.textContent = scene.after.label;
+  elements.performanceComparisonAfterImage.alt = `${comparisonSceneLabel(scene)} ${translate(
+    "comparison.afterLabel",
+  )}`;
+  elements.performanceComparisonBeforeLabel.textContent = translate("comparison.beforeLabel");
+  elements.performanceComparisonAfterLabel.textContent = translate("comparison.afterLabel");
   elements.performanceComparisonRange.value = String(state.comparisonPosition);
   updatePerformanceComparisonPosition();
 }
@@ -1041,13 +1170,15 @@ function updatePerformanceComparisonPosition() {
 
 function renderGameTweaksState() {
   const enabled = elements.skipIntroVideosToggle.checked;
-  elements.gameTweaksStatus.textContent = enabled ? "On" : "Off";
+  elements.gameTweaksStatus.textContent = enabled ? translate("status.on") : translate("status.off");
   elements.gameTweaksStatus.className = enabled ? "pill warn" : "pill";
 }
 
 function renderStreamingState() {
   const enabled = streamingFixesEnabled();
-  elements.streamingStatus.textContent = enabled ? "Streaming On" : "Streaming Off";
+  elements.streamingStatus.textContent = enabled
+    ? translate("status.streamingOn")
+    : translate("status.streamingOff");
   elements.streamingStatus.className = enabled ? "pill good" : "pill";
   elements.presetPanel.classList.toggle("streaming-disabled", !enabled);
   renderCustomPoolState(false);
@@ -1055,7 +1186,9 @@ function renderStreamingState() {
 
 function renderPageChrome() {
   const previewVisible = viewsWithPreview.has(state.currentView);
-  elements.pageTitle.textContent = viewTitles[state.currentView] ?? "Optimize Streaming";
+  elements.pageTitle.textContent = translate(
+    viewTitleKeys[state.currentView] ?? "views.optimizeStreaming",
+  );
   elements.previewPanel.hidden = !previewVisible;
   elements.workspace.classList.toggle("preview-visible", previewVisible);
 }
@@ -1083,6 +1216,7 @@ function setBusy(busy) {
   state.busy = busy;
   elements.refreshButton.disabled = busy;
   elements.loadBackupsButton.disabled = busy;
+  elements.browseTargetButton.disabled = busy;
   elements.resetVanillaButton.disabled = busy || !hasTauriApi();
   updateActionButtons();
 }
@@ -1131,7 +1265,7 @@ function appendLog(message) {
 }
 
 function formatPool(value) {
-  return typeof value === "number" ? `${value} MB` : "Not set";
+  return typeof value === "number" ? `${value} MB` : translate("value.notSet");
 }
 
 function formatModificationState(stateValue) {
@@ -1142,15 +1276,15 @@ function formatModificationState(stateValue) {
 function modificationStateLabel(stateValue) {
   switch (stateValue) {
     case "missing":
-      return "New";
+      return translate("tracking.new");
     case "unchanged":
-      return "Clean";
+      return translate("tracking.clean");
     case "untracked":
-      return "Untracked";
+      return translate("tracking.untracked");
     case "modified":
-      return "Modified";
+      return translate("tracking.modified");
     default:
-      return "Unknown";
+      return translate("tracking.unknown");
   }
 }
 
@@ -1159,30 +1293,53 @@ function modificationStateClass(stateValue) {
   return `file-state ${tone}`;
 }
 
+function yesNo(value) {
+  return value ? translate("table.yes") : translate("table.no");
+}
+
+function poolLabel(poolMb) {
+  return translate("preset.poolLabel", { poolMb });
+}
+
+function presetLabel(preset) {
+  return `${preset.vram_gb} GB VRAM / ${poolLabel(preset.pool_mb)}`;
+}
+
+function recommendationMessage(recommendation) {
+  return translate("recommendation.detected", {
+    vramGb: Math.floor(recommendation.detected_vram_mb / 1024),
+    gpuName: recommendation.gpu_name,
+  });
+}
+
+function comparisonSceneLabel(scene) {
+  return translate(`scene.${scene.id}`);
+}
+
 function formatTweaks(file) {
   const labels = [];
   if (file.will_apply_balanced_performance_tweaks) {
-    labels.push("Balanced (Overdose)");
+    labels.push(translate("tweaks.balanced"));
   }
   if (file.will_apply_disable_volumetric_fog) {
-    labels.push("Volumetric Fog off");
+    labels.push(translate("tweaks.fogOff"));
   }
   if (file.will_apply_low_volumetric_fog) {
-    labels.push("Low Volumetric Fog");
+    labels.push(translate("tweaks.fogLow"));
   }
   if (file.will_apply_d3d12_pso_cache) {
-    labels.push("D3D12 PSO cache");
+    labels.push(translate("tweaks.d3d12"));
   }
   if (file.will_apply_runtime_pso_precaching) {
-    labels.push("Runtime PSO");
+    labels.push(translate("tweaks.runtimePso"));
   }
   if (file.will_apply_gc_smoothing) {
-    labels.push("GC smoothing");
+    labels.push(translate("tweaks.gc"));
   }
   if (file.will_skip_intro_videos) {
-    labels.push("Skip intro");
+    labels.push(translate("tweaks.skipIntro"));
   }
-  return labels.length > 0 ? labels.join(", ") : "Base";
+  return labels.length > 0 ? labels.join(", ") : translate("tweaks.base");
 }
 
 function emptyPreviewMessage() {
@@ -1197,10 +1354,10 @@ function emptyPreviewMessage() {
     !experimentalEngineTweaksEnabled() &&
     !elements.skipIntroVideosToggle.checked
   ) {
-    return "No optimizer changes selected.";
+    return translate("emptyPreview.noChanges");
   }
 
-  return "Select a preset and target folder.";
+  return translate("emptyPreview.selectPreset");
 }
 
 function streamingFixesEnabled() {
@@ -1300,20 +1457,23 @@ function customPoolValidationMessage() {
 
   const inputValue = elements.customPoolInput.value.trim();
   if (!inputValue) {
-    return "Enter a pool size in MB.";
+    return translate("validation.poolEnter");
   }
 
   const value = Number(inputValue);
   if (!Number.isInteger(value)) {
-    return "Use a whole MB value.";
+    return translate("validation.poolWhole");
   }
 
   if (value < MIN_CUSTOM_POOL_MB || value > MAX_CUSTOM_POOL_MB) {
-    return `Use a value between ${MIN_CUSTOM_POOL_MB} and ${MAX_CUSTOM_POOL_MB} MB.`;
+    return translate("validation.poolRange", {
+      min: MIN_CUSTOM_POOL_MB,
+      max: MAX_CUSTOM_POOL_MB,
+    });
   }
 
   if (value % CUSTOM_POOL_STEP_MB !== 0) {
-    return `Use ${CUSTOM_POOL_STEP_MB} MB steps.`;
+    return translate("validation.poolStep", { step: CUSTOM_POOL_STEP_MB });
   }
 
   return "";
@@ -1331,7 +1491,11 @@ function renderCustomPoolState(syncInputValue) {
   const validationMessage = customPoolValidationMessage();
   elements.customPoolHint.textContent =
     validationMessage ||
-    `Use a value between ${MIN_CUSTOM_POOL_MB} and ${MAX_CUSTOM_POOL_MB} MB. ${CUSTOM_POOL_STEP_MB} MB steps are recommended.`;
+    translate("customPool.hint", {
+      min: MIN_CUSTOM_POOL_MB,
+      max: MAX_CUSTOM_POOL_MB,
+      step: CUSTOM_POOL_STEP_MB,
+    });
   elements.customPoolHint.className = validationMessage
     ? "custom-pool-hint bad"
     : "custom-pool-hint";
@@ -1341,16 +1505,16 @@ function customPoolLabel() {
   const poolMb = isCustomPresetSelected()
     ? (selectedCustomPoolMb() ?? state.customPoolMb)
     : state.customPoolMb;
-  return `${poolMb} MB pool`;
+  return poolLabel(poolMb);
 }
 
 function selectedPresetLabel() {
   if (isCustomPresetSelected()) {
-    return `Custom / ${customPoolLabel()}`;
+    return translate("preset.customLabel", { poolLabel: customPoolLabel() });
   }
 
   const preset = state.presets.find((item) => item.id === state.selectedPresetId);
-  return preset?.label ?? (state.selectedPresetId || "None");
+  return preset ? presetLabel(preset) : state.selectedPresetId || translate("value.none");
 }
 
 function selectedIniContentArgs() {
@@ -1370,11 +1534,28 @@ function selectedIniContentArgs() {
 
 function recommendedBadgeMarkup() {
   return `
-    <span class="recommended-badge" title="${escapeHtml(state.recommendation.reason)}">
+    <span class="recommended-badge" title="${escapeHtml(
+      recommendationMessage(state.recommendation),
+    )}">
       <span class="recommended-mark" aria-hidden="true"></span>
-      <span>Recommended</span>
+      <span>${escapeHtml(translate("recommended.badge"))}</span>
     </span>
   `;
+}
+
+async function openTargetFolderDialog() {
+  const options = {
+    title: translate("settings.browseTargetFolder"),
+    directory: true,
+    multiple: false,
+    defaultPath: state.targetDir || undefined,
+  };
+
+  if (window.__TAURI__?.dialog?.open) {
+    return window.__TAURI__.dialog.open(options);
+  }
+
+  return invokeCommand("plugin:dialog|open", { options });
 }
 
 function hasTauriApi() {

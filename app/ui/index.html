@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="./styles.css" />
     <link
       rel="icon"
-      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%232c8f6d'/%3E%3Ctext x='32' y='40' text-anchor='middle' font-family='Arial,sans-serif' font-size='22' font-weight='700' fill='white'%3EG1R%3C/text%3E%3C/svg%3E"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23171818'/%3E%3Crect x='4' y='4' width='56' height='56' rx='10' fill='none' stroke='%236c7375' stroke-width='2'/%3E%3Ctext x='32' y='40' text-anchor='middle' font-family='Arial,sans-serif' font-size='22' font-weight='700' fill='%23d8b978'%3EG1R%3C/text%3E%3C/svg%3E"
     />
   </head>
   <body>
@@ -21,22 +21,50 @@
           </div>
         </div>
 
-        <nav class="nav" aria-label="Views">
-          <button class="nav-item active" type="button" data-view="optimizeStreaming">
-            Optimize Streaming
+        <nav class="nav" aria-label="Views" data-i18n-aria-label="nav.viewsAria">
+          <button
+            class="nav-item active"
+            type="button"
+            data-view="optimizeStreaming"
+            data-i18n="nav.optimizeStreaming"
+          >
+            Streaming Fix
           </button>
-          <button class="nav-item" type="button" data-view="performance">Performance Tweaks</button>
-          <button class="nav-item" type="button" data-view="gameTweaks">Game Tweaks</button>
-          <button class="nav-item reset-nav-item" id="resetVanillaButton" type="button">
+          <button class="nav-item" type="button" data-view="performance" data-i18n="nav.performance">
+            Performance
+          </button>
+          <button class="nav-item" type="button" data-view="gameTweaks" data-i18n="nav.gameTweaks">
+            Game Tweaks
+          </button>
+          <button
+            class="nav-item reset-nav-item"
+            id="resetVanillaButton"
+            type="button"
+            data-i18n="nav.reset"
+          >
             Reset
           </button>
         </nav>
 
         <div class="sidebar-footer">
-          <button class="nav-item" type="button" data-view="backups">Backups</button>
-          <button class="nav-item" type="button" data-view="diagnostics">Diagnostics</button>
+          <button class="nav-item" type="button" data-view="backups" data-i18n="nav.backups">
+            Backups
+          </button>
+          <button
+            class="nav-item"
+            type="button"
+            data-view="diagnostics"
+            data-i18n="nav.diagnostics"
+          >
+            Diagnostics
+          </button>
           <div class="sidebar-settings">
-            <button class="nav-item settings-item" type="button" data-view="settings">
+            <button
+              class="nav-item settings-item"
+              type="button"
+              data-view="settings"
+              data-i18n="nav.settings"
+            >
               Settings
             </button>
           </div>
@@ -47,52 +75,74 @@
         <header class="topbar">
           <div>
             <h1 id="pageTitle">Optimize Streaming</h1>
-            <p id="appStatus">Preparing preset data</p>
+            <p id="appStatus" data-i18n="status.preparing">Preparing preset data</p>
           </div>
-          <button class="secondary-button" id="refreshButton" type="button">Refresh</button>
+          <button class="secondary-button" id="refreshButton" type="button" data-i18n="actions.refresh">
+            Refresh
+          </button>
         </header>
 
         <section class="view active" id="optimizeStreamingView">
           <div class="layout-grid">
-            <section class="panel preset-panel" id="presetPanel" aria-labelledby="presetHeading">
-              <div class="panel-header">
-                <h2 id="presetHeading">Streaming Preset</h2>
-                <div class="panel-actions">
-                  <span class="pill" id="streamingStatus">On</span>
-                  <span class="pill" id="presetCount">0 presets</span>
-                </div>
-              </div>
+            <section
+              class="panel feature-card streaming-fixes-card"
+              aria-labelledby="streamingFixesHeading"
+            >
               <div class="feature-row with-detail">
                 <label class="feature-toggle">
                   <input id="streamingFixesToggle" type="checkbox" checked />
                   <span class="feature-copy">
-                    <span class="feature-title">Enable streaming fixes</span>
-                    <span class="feature-description">
-                      Writes the selected texture streaming pool preset to Engine.ini and
-                      Scalability.ini.
+                    <span class="feature-title-row">
+                      <span
+                        class="feature-title"
+                        id="streamingFixesHeading"
+                        data-i18n="feature.streaming.title"
+                      >
+                        Reduce texture loading stutter
+                      </span>
+                      <span class="pill" id="streamingStatus" data-i18n="status.on">On</span>
+                    </span>
+                    <span class="feature-description" data-i18n="feature.streaming.description">
+                      Helps textures load more smoothly by giving the game a larger texture memory
+                      budget.
                     </span>
                   </span>
                 </label>
                 <div class="streaming-feature-detail">
-                  <p>
-                    Sets Unreal texture streaming pool values in Engine.ini and Scalability.ini to
-                    match the selected VRAM class.
+                  <p data-i18n="feature.streaming.detailText">
+                    Writes texture streaming pool values to Engine.ini and Scalability.ini based on
+                    the selected VRAM class.
                   </p>
                   <dl class="streaming-detail-list">
                     <div>
-                      <dt>Goal</dt>
-                      <dd>Reduce texture streaming pressure and asset-loading stutter.</dd>
+                      <dt data-i18n="feature.streaming.detailGoalTerm">Goal</dt>
+                      <dd data-i18n="feature.streaming.detailGoal">
+                        Reduce texture streaming pressure and asset-loading stutter.
+                      </dd>
                     </div>
                     <div>
-                      <dt>Control</dt>
-                      <dd>The VRAM preset stays user-selected, even when hardware is detected.</dd>
+                      <dt data-i18n="feature.streaming.detailControlTerm">Control</dt>
+                      <dd data-i18n="feature.streaming.detailControl">
+                        The VRAM preset stays user-selected, even when hardware is detected.
+                      </dd>
                     </div>
                   </dl>
                 </div>
               </div>
+            </section>
+
+            <section class="panel preset-panel" id="presetPanel" aria-labelledby="presetHeading">
+              <div class="panel-header">
+                <h2 id="presetHeading" data-i18n="preset.heading">Streaming Preset</h2>
+                <div class="panel-actions">
+                  <span class="pill" id="presetCount">0 presets</span>
+                </div>
+              </div>
               <div class="preset-grid" id="presetGrid"></div>
               <div class="custom-pool-panel" id="customPoolPanel" hidden>
-                <label class="custom-pool-label" for="customPoolInput">Custom pool size</label>
+                <label class="custom-pool-label" for="customPoolInput" data-i18n="customPool.label">
+                  Custom pool size
+                </label>
                 <div class="custom-pool-input-row">
                   <input
                     id="customPoolInput"
@@ -104,114 +154,178 @@
                   />
                   <span class="custom-pool-unit">MB</span>
                 </div>
-                <p class="custom-pool-hint" id="customPoolHint">
+                <p class="custom-pool-hint" id="customPoolHint" data-i18n="customPool.hint">
                   Use a value between 512 and 65536 MB. 256 MB steps are recommended.
                 </p>
               </div>
-              <div class="recommendation-summary" id="recommendationSummary">
+              <div
+                class="recommendation-summary"
+                id="recommendationSummary"
+                data-i18n="recommendation.unavailable"
+              >
                 Hardware recommendation unavailable.
               </div>
-              <div class="performance-experimental" aria-labelledby="experimentalStreamingHeading">
-                <div class="experimental-heading-row">
-                  <h3 id="experimentalStreamingHeading">Experimental Stutter Tests</h3>
-                  <span class="pill warn">Frame-time stability</span>
-                </div>
-                <div class="feature-row with-detail">
-                  <label class="performance-toggle experiment-toggle">
-                    <input id="d3d12PsoCacheToggle" type="checkbox" />
-                    <span class="performance-copy">
-                      <span class="performance-title">D3D12 PSO Disk Cache</span>
-                      <span class="performance-description">
-                        Enables D3D12 pipeline disk caches to reduce repeated shader pipeline hitches.
+            </section>
+
+            <section
+              class="feature-group performance-experimental"
+              aria-labelledby="experimentalStreamingHeading"
+            >
+              <div class="feature-section-heading">
+                <h2 id="experimentalStreamingHeading" data-i18n="feature.experimental.heading">
+                  Experimental Stutter Tests
+                </h2>
+                <span class="pill warn" data-i18n="feature.experimental.badge">
+                  Frame-time stability
+                </span>
+              </div>
+              <div class="feature-card-list experimental-feature-list">
+                <section
+                  class="panel feature-card experimental-feature-card"
+                  aria-labelledby="d3d12PsoCacheHeading"
+                >
+                  <div class="feature-row with-detail">
+                    <label class="performance-toggle experiment-toggle">
+                      <input id="d3d12PsoCacheToggle" type="checkbox" />
+                      <span class="performance-copy">
+                        <span
+                          class="performance-title"
+                          id="d3d12PsoCacheHeading"
+                          data-i18n="feature.d3d12.title"
+                        >
+                          Cache shader work
+                        </span>
+                        <span class="performance-description" data-i18n="feature.d3d12.description">
+                          Reuses some DirectX pipeline work after it has been created once.
+                        </span>
+                        <span class="impact-list">
+                          <span data-i18n="feature.d3d12.impactFile">Engine.ini</span>
+                          <span data-i18n="feature.d3d12.impactNoFps">No FPS target</span>
+                          <span data-i18n="feature.d3d12.impactSpike">Spike test</span>
+                        </span>
                       </span>
-                      <span class="impact-list">
-                        <span>Engine.ini</span>
-                        <span>No FPS target</span>
-                        <span>Spike test</span>
-                      </span>
-                    </span>
-                  </label>
-                  <div class="streaming-feature-detail">
-                    <p>
-                      Enables D3D12 pipeline disk caches so repeated pipeline creation work can be
-                      reused across runs.
-                    </p>
-                    <dl class="streaming-detail-list">
-                      <div>
-                        <dt>Expected effect</dt>
-                        <dd>Targets repeated shader or pipeline hitches, not average FPS.</dd>
-                      </div>
-                      <div>
-                        <dt>Best tested</dt>
-                        <dd>Over longer play sessions because cache behavior builds over time.</dd>
-                      </div>
-                    </dl>
+                    </label>
+                    <div class="streaming-feature-detail">
+                      <p data-i18n="feature.d3d12.detailText">
+                        Enables D3D12 pipeline disk caches so repeated pipeline creation work can be
+                        reused across runs.
+                      </p>
+                      <dl class="streaming-detail-list">
+                        <div>
+                          <dt data-i18n="feature.d3d12.detailEffectTerm">Expected effect</dt>
+                          <dd data-i18n="feature.d3d12.detailEffect">
+                            Targets repeated shader or pipeline hitches, not average FPS.
+                          </dd>
+                        </div>
+                        <div>
+                          <dt data-i18n="feature.d3d12.detailBestTestedTerm">Best tested</dt>
+                          <dd data-i18n="feature.d3d12.detailBestTested">
+                            Over longer play sessions because cache behavior builds over time.
+                          </dd>
+                        </div>
+                      </dl>
+                    </div>
                   </div>
-                </div>
-                <div class="feature-row with-detail">
-                  <label class="performance-toggle experiment-toggle">
-                    <input id="runtimePsoPrecachingToggle" type="checkbox" />
-                    <span class="performance-copy">
-                      <span class="performance-title">Runtime PSO Precaching</span>
-                      <span class="performance-description">
-                        Allows UE runtime PSO precaching and async pipeline compilation.
+                </section>
+
+                <section
+                  class="panel feature-card experimental-feature-card"
+                  aria-labelledby="runtimePsoPrecachingHeading"
+                >
+                  <div class="feature-row with-detail">
+                    <label class="performance-toggle experiment-toggle">
+                      <input id="runtimePsoPrecachingToggle" type="checkbox" />
+                      <span class="performance-copy">
+                        <span
+                          class="performance-title"
+                          id="runtimePsoPrecachingHeading"
+                          data-i18n="feature.runtimePso.title"
+                        >
+                          Prepare shaders earlier
+                        </span>
+                        <span
+                          class="performance-description"
+                          data-i18n="feature.runtimePso.description"
+                        >
+                          Lets Unreal prepare more pipeline work in the background.
+                        </span>
+                        <span class="impact-list">
+                          <span data-i18n="feature.runtimePso.impactFile">Engine.ini</span>
+                          <span data-i18n="feature.runtimePso.impactNoFps">No FPS target</span>
+                          <span data-i18n="feature.runtimePso.impactStutter">Stutter test</span>
+                        </span>
                       </span>
-                      <span class="impact-list">
-                        <span>Engine.ini</span>
-                        <span>No FPS target</span>
-                        <span>Stutter test</span>
-                      </span>
-                    </span>
-                  </label>
-                  <div class="streaming-feature-detail">
-                    <p>
-                      Allows Unreal runtime PSO precaching and async pipeline compilation to move
-                      some pipeline work away from visible frames.
-                    </p>
-                    <dl class="streaming-detail-list">
-                      <div>
-                        <dt>Expected effect</dt>
-                        <dd>May reduce shader-related frame-time spikes.</dd>
-                      </div>
-                      <div>
-                        <dt>Preserves</dt>
-                        <dd>Image quality and average FPS target.</dd>
-                      </div>
-                    </dl>
+                    </label>
+                    <div class="streaming-feature-detail">
+                      <p data-i18n="feature.runtimePso.detailText">
+                        Allows Unreal runtime PSO precaching and async pipeline compilation to move
+                        some pipeline work away from visible frames.
+                      </p>
+                      <dl class="streaming-detail-list">
+                        <div>
+                          <dt data-i18n="feature.runtimePso.detailEffectTerm">Expected effect</dt>
+                          <dd data-i18n="feature.runtimePso.detailEffect">
+                            May reduce shader-related frame-time spikes.
+                          </dd>
+                        </div>
+                        <div>
+                          <dt data-i18n="feature.runtimePso.detailPreservesTerm">Preserves</dt>
+                          <dd data-i18n="feature.runtimePso.detailPreserves">
+                            Image quality and average FPS target.
+                          </dd>
+                        </div>
+                      </dl>
+                    </div>
                   </div>
-                </div>
-                <div class="feature-row with-detail">
-                  <label class="performance-toggle experiment-toggle">
-                    <input id="gcSmoothingToggle" type="checkbox" />
-                    <span class="performance-copy">
-                      <span class="performance-title">GC Smoothing</span>
-                      <span class="performance-description">
-                        Spreads Unreal garbage collection work more gently to test frame-time spikes.
+                </section>
+
+                <section
+                  class="panel feature-card experimental-feature-card"
+                  aria-labelledby="gcSmoothingHeading"
+                >
+                  <div class="feature-row with-detail">
+                    <label class="performance-toggle experiment-toggle">
+                      <input id="gcSmoothingToggle" type="checkbox" />
+                      <span class="performance-copy">
+                        <span
+                          class="performance-title"
+                          id="gcSmoothingHeading"
+                          data-i18n="feature.gc.title"
+                        >
+                          Smooth cleanup spikes
+                        </span>
+                        <span class="performance-description" data-i18n="feature.gc.description">
+                          Tests gentler cleanup timing that can reduce short freezes.
+                        </span>
+                        <span class="impact-list">
+                          <span data-i18n="feature.gc.impactFile">Engine.ini</span>
+                          <span data-i18n="feature.gc.impactNoFps">No FPS target</span>
+                          <span data-i18n="feature.gc.impactFrameTime">Frame-time test</span>
+                        </span>
                       </span>
-                      <span class="impact-list">
-                        <span>Engine.ini</span>
-                        <span>No FPS target</span>
-                        <span>Frame-time test</span>
-                      </span>
-                    </span>
-                  </label>
-                  <div class="streaming-feature-detail">
-                    <p>
-                      Adjusts Unreal garbage collection timing and threading settings to test
-                      whether object cleanup spikes become less visible.
-                    </p>
-                    <dl class="streaming-detail-list">
-                      <div>
-                        <dt>Expected effect</dt>
-                        <dd>A stability tweak for long frame-time spikes caused by cleanup work.</dd>
-                      </div>
-                      <div>
-                        <dt>Fallback</dt>
-                        <dd>Disable it if longer sessions show worse hitching.</dd>
-                      </div>
-                    </dl>
+                    </label>
+                    <div class="streaming-feature-detail">
+                      <p data-i18n="feature.gc.detailText">
+                        Adjusts Unreal garbage collection timing and threading settings to test
+                        whether object cleanup spikes become less visible.
+                      </p>
+                      <dl class="streaming-detail-list">
+                        <div>
+                          <dt data-i18n="feature.gc.detailEffectTerm">Expected effect</dt>
+                          <dd data-i18n="feature.gc.detailEffect">
+                            A stability tweak for long frame-time spikes caused by cleanup work.
+                          </dd>
+                        </div>
+                        <div>
+                          <dt data-i18n="feature.gc.detailFallbackTerm">Fallback</dt>
+                          <dd data-i18n="feature.gc.detailFallback">
+                            Disable it if longer sessions show worse hitching.
+                          </dd>
+                        </div>
+                      </dl>
+                    </div>
                   </div>
-                </div>
+                </section>
               </div>
             </section>
           </div>
@@ -219,206 +333,262 @@
 
         <section class="view" id="performanceView">
           <div class="layout-grid">
-            <section class="panel performance-panel" aria-labelledby="performanceHeading">
-              <div class="panel-header">
-                <h2 id="performanceHeading">Performance Tweaks</h2>
-                <div class="panel-actions">
-                  <span class="pill" id="performanceStatus">Off</span>
-                </div>
-              </div>
-              <div class="feature-row with-detail">
-                <label class="performance-toggle">
-                  <input id="balancedPerformanceToggle" type="checkbox" />
-                  <span class="performance-copy">
-                    <span class="performance-title">Overdose FPS Improvements</span>
-                    <span class="performance-description">
-                      Conservative Scalability.ini tweaks for the Overdose profile without disabling
-                      Lumen, Nanite or virtual shadows.
-                    </span>
-                    <span class="impact-list">
-                      <span>Overdose profile only</span>
-                      <span>Low visual impact</span>
-                      <span>Backed up</span>
-                    </span>
-                    <div class="feature-actions">
+            <div class="feature-section-heading">
+              <h2 id="performanceHeading" data-i18n="performance.heading">Performance Tweaks</h2>
+              <span class="pill" id="performanceStatus" data-i18n="status.off">Off</span>
+            </div>
+            <div
+              class="feature-card-list performance-feature-list"
+              aria-labelledby="performanceHeading"
+            >
+              <section
+                class="panel feature-card performance-feature-card"
+                aria-labelledby="balancedPerformanceHeading"
+              >
+                <div class="feature-row with-detail">
+                  <div class="feature-control-column">
+                    <label class="performance-toggle compact-toggle">
+                      <input id="balancedPerformanceToggle" type="checkbox" />
+                      <span class="performance-copy">
+                        <span
+                          class="performance-title"
+                          id="balancedPerformanceHeading"
+                          data-i18n="feature.balanced.title"
+                        >
+                          Improve Overdose performance
+                        </span>
+                        <span
+                          class="performance-description"
+                          data-i18n="feature.balanced.description"
+                        >
+                          Raises FPS in the Overdose preset with small visual trade-offs.
+                        </span>
+                        <span class="impact-list">
+                          <span data-i18n="feature.balanced.impactProfile">Overdose only</span>
+                          <span data-i18n="feature.balanced.impactVisual">Low visual impact</span>
+                          <span data-i18n="feature.balanced.impactBackup">Backed up</span>
+                        </span>
+                      </span>
+                    </label>
+                    <span class="feature-actions feature-card-actions">
                       <button
                         class="secondary-button compact"
                         id="openPerformanceComparisonButton"
                         type="button"
                       >
-                        Visual Comparison
+                        <span data-i18n="performance.visualComparison">Visual Comparison</span>
                       </button>
-                    </div>
-                  </span>
-                </label>
-                <div class="streaming-feature-detail">
-                  <p>
-                    Applies conservative Scalability.ini caps only to the Overdose profile. The goal
-                    is higher FPS with minimal visible quality loss.
-                  </p>
-                  <dl class="streaming-detail-list">
-                    <div>
-                      <dt>Changes</dt>
-                      <dd>Shadow, reflection, volumetric and post-processing caps for Overdose.</dd>
-                    </div>
-                    <div>
-                      <dt>Preserves</dt>
-                      <dd>Lumen, Nanite and virtual shadows stay enabled.</dd>
-                    </div>
-                  </dl>
-                </div>
-              </div>
-              <div class="feature-row with-detail">
-                <div class="performance-toggle fog-mode-feature">
-                  <span class="performance-copy">
-                    <span class="performance-title">Volumetric Fog</span>
-                    <span class="performance-description">
-                      Choose how aggressively Unreal volumetric fog should be optimized.
                     </span>
-                    <fieldset
-                      class="segmented-control fog-mode-control"
-                      id="volumetricFogModeControl"
-                      aria-label="Volumetric fog mode"
-                    >
-                      <label class="fog-mode-option">
-                        <input
-                          id="volumetricFogModeNormal"
-                          type="radio"
-                          name="volumetricFogMode"
-                          value="normal"
-                          checked
-                        />
-                        <span>
-                          <span class="fog-mode-label">Default</span>
-                        </span>
-                      </label>
-                      <label class="fog-mode-option recommended">
-                        <input
-                          id="volumetricFogModeLow"
-                          type="radio"
-                          name="volumetricFogMode"
-                          value="low"
-                        />
-                        <span>
-                          <span class="fog-mode-label">Low</span>
-                          <span class="fog-mode-recommendation">Recommended</span>
-                        </span>
-                      </label>
-                      <label class="fog-mode-option">
-                        <input
-                          id="volumetricFogModeOff"
-                          type="radio"
-                          name="volumetricFogMode"
-                          value="off"
-                        />
-                        <span>
-                          <span class="fog-mode-label">Off</span>
-                        </span>
-                      </label>
-                    </fieldset>
-                    <span class="impact-list">
-                      <span>Best balance</span>
-                      <span>Visual impact</span>
-                      <span>Profile independent</span>
+                  </div>
+                  <div class="streaming-feature-detail">
+                    <p data-i18n="feature.balanced.detailText">
+                      Applies conservative Scalability.ini caps only to the Overdose profile. The
+                      goal is higher FPS with minimal visible quality loss.
+                    </p>
+                    <dl class="streaming-detail-list">
+                      <div>
+                        <dt data-i18n="feature.balanced.detailChangesTerm">Changes</dt>
+                        <dd data-i18n="feature.balanced.detailChanges">
+                          Shadow, reflection, volumetric and post-processing caps for Overdose.
+                        </dd>
+                      </div>
+                      <div>
+                        <dt data-i18n="feature.balanced.detailPreservesTerm">Preserves</dt>
+                        <dd data-i18n="feature.balanced.detailPreserves">
+                          Lumen, Nanite and virtual shadows stay enabled.
+                        </dd>
+                      </div>
+                    </dl>
+                  </div>
+                </div>
+              </section>
+
+              <section
+                class="panel feature-card performance-feature-card"
+                aria-labelledby="volumetricFogHeading"
+              >
+                <div class="feature-row with-detail">
+                  <div class="performance-toggle fog-mode-feature">
+                    <span class="performance-copy">
+                      <span
+                        class="performance-title"
+                        id="volumetricFogHeading"
+                        data-i18n="feature.fog.title"
+                      >
+                        Volumetric Fog
+                      </span>
+                      <span class="performance-description" data-i18n="feature.fog.description">
+                        Choose full fog quality, a lighter version, or turning it off.
+                      </span>
+                      <fieldset
+                        class="segmented-control fog-mode-control"
+                        id="volumetricFogModeControl"
+                        aria-label="Volumetric fog mode"
+                        data-i18n-aria-label="feature.fog.modeAria"
+                      >
+                        <label class="fog-mode-option">
+                          <input
+                            id="volumetricFogModeNormal"
+                            type="radio"
+                            name="volumetricFogMode"
+                            value="normal"
+                            checked
+                          />
+                          <span>
+                            <span class="fog-mode-label" data-i18n="feature.fog.modeDefault">
+                              Default
+                            </span>
+                          </span>
+                        </label>
+                        <label class="fog-mode-option recommended">
+                          <input
+                            id="volumetricFogModeLow"
+                            type="radio"
+                            name="volumetricFogMode"
+                            value="low"
+                          />
+                          <span>
+                            <span class="fog-mode-label" data-i18n="feature.fog.modeLow">Low</span>
+                            <span class="fog-mode-recommendation" data-i18n="feature.fog.recommended">
+                              Recommended
+                            </span>
+                          </span>
+                        </label>
+                        <label class="fog-mode-option">
+                          <input
+                            id="volumetricFogModeOff"
+                            type="radio"
+                            name="volumetricFogMode"
+                            value="off"
+                          />
+                          <span>
+                            <span class="fog-mode-label" data-i18n="feature.fog.modeOff">Off</span>
+                          </span>
+                        </label>
+                      </fieldset>
+                      <span class="impact-list">
+                        <span data-i18n="feature.fog.impactBalance">Best balance</span>
+                        <span data-i18n="feature.fog.impactVisual">Visual impact</span>
+                        <span data-i18n="feature.fog.impactIndependent">Profile independent</span>
+                      </span>
                     </span>
-                  </span>
+                  </div>
+                  <div class="streaming-feature-detail">
+                    <p data-i18n="feature.fog.detailText">
+                      Low keeps the effect enabled and reduces its internal resolution. Off disables
+                      volumetric fog completely and is only worth it when the small extra FPS gain is
+                      more important than atmosphere.
+                    </p>
+                    <dl class="streaming-detail-list">
+                      <div>
+                        <dt data-i18n="feature.fog.detailLowTerm">Low</dt>
+                        <dd data-i18n="feature.fog.detailLow">
+                          Best balance: measured close to Off, with less visible quality loss.
+                        </dd>
+                      </div>
+                      <div>
+                        <dt data-i18n="feature.fog.detailOffTerm">Off</dt>
+                        <dd data-i18n="feature.fog.detailOff">
+                          Maximum fog cut: writes r.VolumetricFog=0 with stronger visual impact.
+                        </dd>
+                      </div>
+                    </dl>
+                  </div>
                 </div>
-                <div class="streaming-feature-detail">
-                  <p>
-                    Low keeps the effect enabled and reduces its internal resolution. Off disables
-                    volumetric fog completely and is only worth it when the small extra FPS gain is
-                    more important than atmosphere.
-                  </p>
-                  <dl class="streaming-detail-list">
-                    <div>
-                      <dt>Low</dt>
-                      <dd>Best balance: measured close to Off, with less visible quality loss.</dd>
-                    </div>
-                    <div>
-                      <dt>Off</dt>
-                      <dd>Maximum fog cut: writes r.VolumetricFog=0 with stronger visual impact.</dd>
-                    </div>
-                  </dl>
-                </div>
-              </div>
-            </section>
+              </section>
+            </div>
           </div>
         </section>
 
         <section class="view" id="gameTweaksView">
           <div class="layout-grid">
-            <section class="panel performance-panel" aria-labelledby="gameTweaksHeading">
-              <div class="panel-header">
-                <h2 id="gameTweaksHeading">Game Tweaks</h2>
-                <span class="pill" id="gameTweaksStatus">Off</span>
-              </div>
-              <label class="performance-toggle">
-                <input id="skipIntroVideosToggle" type="checkbox" />
-                <span class="performance-copy">
-                  <span class="performance-title">Skip Intro Videos</span>
-                  <span class="performance-description">
-                    Skips logo and legal videos through Game.ini settings without deleting or
-                    overwriting original movie files.
-                  </span>
-                  <span class="impact-list">
-                    <span>Startup only</span>
-                    <span>No file replacement</span>
-                    <span>Backed up</span>
-                  </span>
-                </span>
-              </label>
-            </section>
-            <aside class="panel explanation-panel" aria-labelledby="gameTweaksInfoHeading">
-              <div class="panel-header">
-                <h2 id="gameTweaksInfoHeading">Startup Tweaks</h2>
-                <span class="pill">Opt-in</span>
-              </div>
-              <div class="explanation-body">
-                <p>
-                  Keeps the engine loading screen active while removing the studio and legal
-                  startup movies from the configured startup list, so the menu can open without an
-                  extra click. Unlike existing file-replacement intro skip mods, this leaves the
-                  game's original video files untouched.
-                </p>
-                <dl class="explanation-list">
-                  <div>
-                    <dt>Changes</dt>
-                    <dd>Game.ini AsyncLoadingScreen startup movie list.</dd>
+            <div class="feature-section-heading">
+              <h2 id="gameTweaksHeading" data-i18n="gameTweaks.heading">Game Tweaks</h2>
+              <span class="pill" id="gameTweaksStatus" data-i18n="status.off">Off</span>
+            </div>
+            <div class="feature-card-list game-feature-list" aria-labelledby="gameTweaksHeading">
+              <section
+                class="panel feature-card game-feature-card"
+                aria-labelledby="skipIntroVideosHeading"
+              >
+                <div class="feature-row with-detail">
+                  <label class="performance-toggle">
+                    <input id="skipIntroVideosToggle" type="checkbox" />
+                    <span class="performance-copy">
+                      <span
+                        class="performance-title"
+                        id="skipIntroVideosHeading"
+                        data-i18n="feature.skipIntro.title"
+                      >
+                        Skip Intro Videos
+                      </span>
+                      <span class="performance-description" data-i18n="feature.skipIntro.description">
+                        Opens the menu faster without replacing any game video files.
+                      </span>
+                      <span class="impact-list">
+                        <span data-i18n="feature.skipIntro.impactStartup">Startup only</span>
+                        <span data-i18n="feature.skipIntro.impactNoReplacement">
+                          No file replacement
+                        </span>
+                        <span data-i18n="feature.skipIntro.impactBackup">Backed up</span>
+                      </span>
+                    </span>
+                  </label>
+                  <div class="streaming-feature-detail">
+                    <p data-i18n="feature.skipIntro.detailText">
+                      Keeps the engine loading screen active while removing the studio and legal
+                      startup movies from the configured startup list, so the menu can open without
+                      an extra click.
+                    </p>
+                    <dl class="streaming-detail-list">
+                      <div>
+                        <dt data-i18n="feature.skipIntro.detailChangesTerm">Changes</dt>
+                        <dd data-i18n="feature.skipIntro.detailChanges">
+                          Game.ini AsyncLoadingScreen startup movie list.
+                        </dd>
+                      </div>
+                      <div>
+                        <dt data-i18n="feature.skipIntro.detailPreservesTerm">Preserves</dt>
+                        <dd data-i18n="feature.skipIntro.detailPreserves">
+                          No original video files are deleted, overwritten, or renamed.
+                        </dd>
+                      </div>
+                      <div>
+                        <dt data-i18n="feature.skipIntro.detailLoadingTerm">Loading screen</dt>
+                        <dd data-i18n="feature.skipIntro.detailLoading">
+                          The LoopingEngineLoadScreen remains as a valid startup loading screen.
+                        </dd>
+                      </div>
+                      <div>
+                        <dt data-i18n="feature.skipIntro.detailControlTerm">Control</dt>
+                        <dd data-i18n="feature.skipIntro.detailControl">
+                          The toggle changes the preview first; optimization still requires Optimize.
+                        </dd>
+                      </div>
+                    </dl>
                   </div>
-                  <div>
-                    <dt>Preserves</dt>
-                    <dd>No original video files are deleted, overwritten, or renamed.</dd>
-                  </div>
-                  <div>
-                    <dt>Loading screen</dt>
-                    <dd>The LoopingEngineLoadScreen remains as a valid startup loading screen.</dd>
-                  </div>
-                  <div>
-                    <dt>Control</dt>
-                    <dd>The toggle changes the preview first; optimization still requires Optimize.</dd>
-                  </div>
-                </dl>
-              </div>
-            </aside>
+                </div>
+              </section>
+            </div>
           </div>
         </section>
 
         <section class="panel preview-panel" id="previewPanel" aria-labelledby="previewHeading">
           <div class="panel-header">
-            <h2 id="previewHeading">Preview</h2>
-            <span class="pill" id="previewStatus">Waiting</span>
+            <h2 id="previewHeading" data-i18n="preview.heading">Preview</h2>
+            <span class="pill" id="previewStatus" data-i18n="status.waiting">Waiting</span>
           </div>
           <div class="table-wrap">
             <table>
               <thead>
                 <tr>
-                  <th>File</th>
-                  <th>Tracking</th>
-                  <th>Current pool</th>
-                  <th>Preset pool</th>
-                  <th>Tweaks</th>
-                  <th>Backup</th>
-                  <th>Read-only</th>
+                  <th data-i18n="preview.file">File</th>
+                  <th data-i18n="preview.tracking">Tracking</th>
+                  <th data-i18n="preview.currentPool">Current pool</th>
+                  <th data-i18n="preview.presetPool">Preset pool</th>
+                  <th data-i18n="preview.tweaks">Tweaks</th>
+                  <th data-i18n="preview.backup">Backup</th>
+                  <th data-i18n="preview.readOnly">Read-only</th>
                 </tr>
               </thead>
               <tbody id="previewRows"></tbody>
@@ -426,22 +596,41 @@
           </div>
           <div class="action-row">
             <div class="action-feedback">
-              <button class="primary-button" id="optimizeButton" type="button">Optimize</button>
-              <button class="secondary-button" id="copyIniButton" type="button">
+              <button
+                class="primary-button"
+                id="optimizeButton"
+                type="button"
+                data-i18n="actions.optimize"
+              >
+                Optimize
+              </button>
+              <button
+                class="secondary-button"
+                id="copyIniButton"
+                type="button"
+                data-i18n="actions.copyPaste"
+              >
                 Copy &amp; Paste
               </button>
               <span class="action-status" id="optimizeStatus" aria-live="polite" hidden></span>
             </div>
-            <div class="last-result" id="lastResult" hidden>No changes applied</div>
+            <div class="last-result" id="lastResult" hidden data-i18n="lastResult.noChanges">
+              No changes applied
+            </div>
           </div>
         </section>
 
         <section class="view" id="backupsView">
           <section class="panel" aria-labelledby="backupsHeading">
             <div class="panel-header">
-              <h2 id="backupsHeading">Backups</h2>
+              <h2 id="backupsHeading" data-i18n="backups.heading">Backups</h2>
               <div class="panel-actions">
-                <button class="secondary-button compact" id="loadBackupsButton" type="button">
+                <button
+                  class="secondary-button compact"
+                  id="loadBackupsButton"
+                  type="button"
+                  data-i18n="actions.reload"
+                >
                   Reload
                 </button>
               </div>
@@ -453,28 +642,30 @@
         <section class="view" id="diagnosticsView">
           <section class="panel" aria-labelledby="diagnosticsHeading">
             <div class="panel-header">
-              <h2 id="diagnosticsHeading">Diagnostics</h2>
-              <span class="pill" id="diagnosticsStatus">Ready</span>
+              <h2 id="diagnosticsHeading" data-i18n="diagnostics.heading">Diagnostics</h2>
+              <span class="pill" id="diagnosticsStatus" data-i18n="diagnostics.statusReady">
+                Ready
+              </span>
             </div>
             <dl class="diagnostics-list">
               <div>
-                <dt>Runtime</dt>
+                <dt data-i18n="diagnostics.runtime">Runtime</dt>
                 <dd id="runtimeStatus">Loading</dd>
               </div>
               <div>
-                <dt>Preset root</dt>
+                <dt data-i18n="diagnostics.presetRoot">Preset root</dt>
                 <dd id="presetRootValue">Unknown</dd>
               </div>
               <div>
-                <dt>Selected preset</dt>
+                <dt data-i18n="diagnostics.selectedPreset">Selected preset</dt>
                 <dd id="selectedPresetValue">None</dd>
               </div>
               <div>
-                <dt>Recommended preset</dt>
+                <dt data-i18n="diagnostics.recommendedPreset">Recommended preset</dt>
                 <dd id="recommendedPresetValue">None</dd>
               </div>
               <div>
-                <dt>Selected target</dt>
+                <dt data-i18n="diagnostics.selectedTarget">Selected target</dt>
                 <dd id="selectedTargetValue">None</dd>
               </div>
             </dl>
@@ -483,27 +674,56 @@
         </section>
 
         <section class="view" id="settingsView">
+          <section class="panel settings-panel" aria-labelledby="languageHeading">
+            <div class="panel-header">
+              <h2 id="languageHeading" data-i18n="settings.languageHeading">Language</h2>
+            </div>
+            <label class="field-label" for="languageSelect" data-i18n="settings.languageLabel">
+              App language
+            </label>
+            <select id="languageSelect"></select>
+            <p class="settings-hint" data-i18n="settings.languageHint">
+              Auto uses your system language when it is English, German, or Polish.
+            </p>
+          </section>
           <section class="panel target-panel" aria-labelledby="targetHeading">
             <div class="panel-header">
-              <h2 id="targetHeading">Game Config Folder</h2>
-              <span class="pill" id="pathStatus">Unchecked</span>
+              <h2 id="targetHeading" data-i18n="settings.configHeading">Game Config Folder</h2>
+              <span class="pill" id="pathStatus" data-i18n="pathStatus.unchecked">Unchecked</span>
             </div>
-            <label class="field-label" for="candidateSelect">Detected locations</label>
+            <label class="field-label" for="candidateSelect" data-i18n="settings.detectedLocations">
+              Detected locations
+            </label>
             <select id="candidateSelect"></select>
-            <label class="field-label" for="targetInput">Target path</label>
-            <input id="targetInput" type="text" spellcheck="false" />
+            <label class="field-label" for="targetInput" data-i18n="settings.targetPath">
+              Target path
+            </label>
+            <div class="path-input-row">
+              <input id="targetInput" type="text" spellcheck="false" />
+              <button
+                class="secondary-button path-picker-button"
+                id="browseTargetButton"
+                type="button"
+                aria-label="Browse for game config folder"
+                title="Browse for game config folder"
+                data-i18n-aria-label="settings.browseTargetFolder"
+                data-i18n-title="settings.browseTargetFolder"
+              >
+                ...
+              </button>
+            </div>
             <div class="toggles">
               <label class="toggle">
                 <input id="lockEngineToggle" type="checkbox" checked />
-                <span>Lock Engine.ini</span>
+                <span data-i18n="settings.lockEngine">Lock Engine.ini</span>
               </label>
               <label class="toggle">
                 <input id="lockGameToggle" type="checkbox" checked />
-                <span>Lock Game.ini</span>
+                <span data-i18n="settings.lockGame">Lock Game.ini</span>
               </label>
               <label class="toggle">
                 <input id="lockScalabilityToggle" type="checkbox" checked />
-                <span>Lock Scalability.ini</span>
+                <span data-i18n="settings.lockScalability">Lock Scalability.ini</span>
               </label>
             </div>
           </section>
@@ -520,17 +740,29 @@
         aria-describedby="confirmModalDescription"
       >
         <div class="modal-header">
-          <h2 id="confirmModalTitle">Reset to Vanilla?</h2>
+          <h2 id="confirmModalTitle" data-i18n="modal.reset.title">Reset to Vanilla?</h2>
         </div>
         <div class="modal-body">
-          <p id="confirmModalDescription">
+          <p id="confirmModalDescription" data-i18n="modal.reset.description">
             This removes Engine.ini, Game.ini and Scalability.ini from the selected game config
             folder. A backup is created first.
           </p>
         </div>
         <div class="modal-actions">
-          <button class="secondary-button" id="confirmModalCancel" type="button">Cancel</button>
-          <button class="danger-button" id="confirmModalConfirm" type="button">
+          <button
+            class="secondary-button"
+            id="confirmModalCancel"
+            type="button"
+            data-i18n="actions.cancel"
+          >
+            Cancel
+          </button>
+          <button
+            class="danger-button"
+            id="confirmModalConfirm"
+            type="button"
+            data-i18n="actions.resetToVanilla"
+          >
             Reset to Vanilla
           </button>
         </div>
@@ -547,12 +779,17 @@
       >
         <div class="modal-header comparison-modal-header">
           <div>
-            <h2 id="iniCopyModalTitle">Copy INI Settings</h2>
-            <p id="iniCopyModalDescription">
+            <h2 id="iniCopyModalTitle" data-i18n="iniCopy.title">Copy INI Settings</h2>
+            <p id="iniCopyModalDescription" data-i18n="iniCopy.description">
               Copy the generated app settings and paste them into your own INI files manually.
             </p>
           </div>
-          <button class="secondary-button compact" id="iniCopyModalClose" type="button">
+          <button
+            class="secondary-button compact"
+            id="iniCopyModalClose"
+            type="button"
+            data-i18n="actions.close"
+          >
             Close
           </button>
         </div>
@@ -572,15 +809,18 @@
       >
         <div class="modal-header comparison-modal-header">
           <div>
-            <h2 id="comparisonGalleryModalTitle">Visual Comparison</h2>
-            <p id="comparisonGalleryModalDescription">
-              Choose a scene to compare Overdose against Balanced (Overdose).
+            <h2 id="comparisonGalleryModalTitle" data-i18n="comparison.title">
+              Visual Comparison
+            </h2>
+            <p id="comparisonGalleryModalDescription" data-i18n="comparison.galleryDescription">
+              Choose a scene to compare Overdose against Balanced.
             </p>
           </div>
           <button
             class="secondary-button compact"
             id="comparisonGalleryModalClose"
             type="button"
+            data-i18n="actions.close"
           >
             Close
           </button>
@@ -590,6 +830,7 @@
             class="comparison-gallery"
             id="performanceComparisonGallery"
             aria-label="Comparison previews"
+            data-i18n-aria-label="comparison.galleryAria"
           ></div>
         </div>
       </section>
@@ -605,15 +846,16 @@
       >
         <div class="modal-header comparison-modal-header">
           <div>
-            <h2 id="comparisonModalTitle">Visual Comparison</h2>
-            <p id="comparisonModalDescription">
-              Overdose versus Balanced (Overdose), with the FPS overlay left visible.
+            <h2 id="comparisonModalTitle" data-i18n="comparison.title">Visual Comparison</h2>
+            <p id="comparisonModalDescription" data-i18n="comparison.modalDescription">
+              Overdose versus Balanced, with the FPS overlay left visible.
             </p>
           </div>
           <button
             class="secondary-button compact"
             id="comparisonModalClose"
             type="button"
+            data-i18n="actions.close"
           >
             Close
           </button>
@@ -642,12 +884,14 @@
             <span
               class="comparison-label comparison-label-before"
               id="performanceComparisonBeforeLabel"
+              data-i18n="comparison.beforeLabel"
             >
               Overdose
             </span>
             <span
               class="comparison-label comparison-label-after"
               id="performanceComparisonAfterLabel"
+              data-i18n="comparison.afterLabel"
             >
               Balanced (Overdose)
             </span>
@@ -659,6 +903,7 @@
               max="100"
               value="50"
               aria-label="Before and after comparison position"
+              data-i18n-aria-label="comparison.positionAria"
             />
           </div>
         </div>

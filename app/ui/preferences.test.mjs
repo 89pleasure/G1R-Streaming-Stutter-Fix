@@ -28,6 +28,7 @@ function createMemoryStorage() {
   assert.equal(preferences.lockGame, true);
   assert.equal(preferences.lockScalability, true);
   assert.equal(preferences.customPoolMb, 12288);
+  assert.equal(preferences.language, "auto");
 }
 
 {
@@ -48,6 +49,7 @@ function createMemoryStorage() {
       customPoolMb: 16384,
       selectedPresetId: "20GB_VRAM_10240MB",
       targetDir: "/tmp/G1R/Config/Windows",
+      language: "pl",
     },
     storage,
   );
@@ -66,6 +68,7 @@ function createMemoryStorage() {
     customPoolMb: 16384,
     selectedPresetId: "20GB_VRAM_10240MB",
     targetDir: "/tmp/G1R/Config/Windows",
+    language: "pl",
   });
 }
 
@@ -104,4 +107,14 @@ function createMemoryStorage() {
   );
 
   assert.equal(loadUiPreferences(storage).volumetricFogMode, "normal");
+}
+
+{
+  const storage = createMemoryStorage();
+  storage.setItem(
+    "g1r-optimizer.ui-preferences.v1",
+    JSON.stringify({ language: "unsupported" }),
+  );
+
+  assert.equal(loadUiPreferences(storage).language, "auto");
 }

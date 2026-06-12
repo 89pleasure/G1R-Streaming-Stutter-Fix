@@ -10,18 +10,13 @@ const comparisonJs = await readFile(
 const css = await readFile(new URL("./styles.css", import.meta.url), "utf8");
 const optimizeStreamingView = extractSection(html, "optimizeStreamingView");
 const performanceView = extractSection(html, "performanceView");
-const performanceHeader = extractBetween(
-  performanceView,
-  '<div class="panel-header">',
-  '<div class="feature-row with-detail">',
-);
 const overdoseFeatureRow = extractFeatureRow(
   performanceView,
-  '<span class="performance-title">Overdose FPS Improvements</span>',
+  'id="balancedPerformanceHeading"',
 );
 const fogFeatureRow = extractFeatureRow(
   performanceView,
-  '<span class="performance-title">Volumetric Fog</span>',
+  'id="volumetricFogHeading"',
 );
 
 assert.match(optimizeStreamingView, /Experimental Stutter Tests/);
@@ -31,17 +26,21 @@ assert.match(optimizeStreamingView, /id="runtimePsoPrecachingToggle"/);
 assert.match(optimizeStreamingView, /id="gcSmoothingToggle"/);
 
 assert.match(performanceView, /<div class="layout-grid">/);
-assert.match(performanceView, /class="panel performance-panel"/);
+assert.doesNotMatch(performanceView, /class="panel performance-panel"/);
+assert.equal(countMatches(html, /class="panel feature-card/g), 7);
+assert.match(optimizeStreamingView, /class="panel feature-card streaming-fixes-card"/);
+assert.match(optimizeStreamingView, /class="feature-card-list experimental-feature-list"/);
+assert.equal(countMatches(optimizeStreamingView, /class="panel feature-card experimental-feature-card"/g), 3);
+assert.equal(countMatches(performanceView, /class="panel feature-card performance-feature-card"/g), 2);
+assert.match(gameTweaksView(), /class="panel feature-card game-feature-card"/);
 assert.match(performanceView, /id="openPerformanceComparisonButton"/);
-assert.doesNotMatch(performanceHeader, /id="openPerformanceComparisonButton"/);
-assert.doesNotMatch(performanceHeader, /Overdose only/);
 assert.match(overdoseFeatureRow, /id="openPerformanceComparisonButton"/);
 assert.match(overdoseFeatureRow, /Visual Comparison/);
 assert.match(performanceView, /class="feature-row with-detail"/);
 assert.doesNotMatch(performanceView, /class="streaming-detail-title"/);
 assert.doesNotMatch(performanceView, /class="streaming-detail-heading"/);
 assert.ok(
-  performanceView.match(/<div class="streaming-feature-detail">\s*<p>/g)?.length >= 2,
+  performanceView.match(/<div class="streaming-feature-detail">\s*<p(?:\s[^>]*)?>/g)?.length >= 2,
   "Performance detail boxes start directly with explanatory text",
 );
 assert.match(performanceView, /id="volumetricFogModeControl"/);
@@ -49,10 +48,10 @@ assert.match(performanceView, /id="volumetricFogModeNormal"/);
 assert.match(performanceView, /id="volumetricFogModeLow"/);
 assert.match(performanceView, /id="volumetricFogModeOff"/);
 assert.match(performanceView, /class="fog-mode-option recommended"/);
-assert.match(performanceView, /<span class="fog-mode-label">Default<\/span>/);
-assert.match(performanceView, /<span class="performance-title">Volumetric Fog<\/span>/);
-assert.match(performanceView, /<span class="fog-mode-recommendation">Recommended<\/span>/);
-assert.match(performanceView, /<span>Best balance<\/span>/);
+assert.match(performanceView, /data-i18n="feature\.fog\.modeDefault"/);
+assert.match(performanceView, /id="volumetricFogHeading"[\s\S]*Volumetric Fog/);
+assert.match(performanceView, /data-i18n="feature\.fog\.recommended"/);
+assert.match(performanceView, /data-i18n="feature\.fog\.impactBalance"/);
 assert.doesNotMatch(fogFeatureRow, /<span>Engine\.ini<\/span>/);
 assert.doesNotMatch(performanceView, /id="disableVolumetricFogToggle"/);
 assert.doesNotMatch(performanceView, /id="lowVolumetricFogToggle"/);
@@ -74,10 +73,10 @@ assert.match(html, /id="copyIniButton"/);
 assert.match(html, /id="optimizeButton"[\s\S]*id="copyIniButton"/);
 assert.match(html, /id="iniCopyModal"/);
 assert.match(html, /id="iniCopyFileList"/);
-assert.match(html, /<th>Tracking<\/th>/);
+assert.match(html, /data-i18n="preview\.tracking"/);
 assert.match(mainJs, /function confirmOverwriteRisks\(\)/);
-assert.match(mainJs, /There are already custom INI files/);
-assert.match(mainJs, /Use App Settings Only/);
+assert.match(mainJs, /modal\.overwrite\.descriptionMerge/);
+assert.match(mainJs, /actions\.useAppSettingsOnly/);
 assert.match(mainJs, /function openIniCopyModal\(\)/);
 assert.match(mainJs, /function copyIniFileContent\(/);
 assert.match(mainJs, /CUSTOM_PRESET_ID/);
@@ -94,13 +93,16 @@ assert.match(mainJs, /installStrategy/);
 assert.match(mainJs, /modification_state/);
 assert.match(css, /#performanceView\.view\.active\s*\{[^}]*align-content:\s*stretch;/s);
 assert.match(css, /#performanceView\.view\.active\s*\{[^}]*overflow:\s*hidden;/s);
-assert.match(css, /#performanceView \.performance-panel\s*\{[^}]*align-self:\s*stretch;/s);
-assert.match(css, /#performanceView \.performance-panel\s*\{[^}]*overflow:\s*auto;/s);
-assert.match(css, /#performanceView \.performance-panel\s*\{[^}]*scrollbar-gutter:\s*stable;/s);
+assert.match(css, /\.feature-card-list\s*\{[^}]*display:\s*grid;/s);
+assert.match(css, /\.feature-card\s+\.feature-row\s*\{[^}]*border-bottom:\s*0;/s);
 assert.match(css, /#performanceView > \.layout-grid\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\);/s);
 assert.match(css, /\.feature-actions\s*\{/);
-assert.match(css, /\.segmented-control label\.recommended > span\s*\{[^}]*#2c8f6d/s);
-assert.match(css, /\.fog-mode-recommendation\s*\{[^}]*#1d7658/s);
+assert.match(css, /\.segmented-control label\.recommended > span\s*\{[^}]*var\(--app-accent\)/s);
+assert.match(css, /\.fog-mode-recommendation\s*\{[^}]*var\(--app-accent-text\)/s);
+assert.match(
+  css,
+  /@media \(max-width: 920px\)\s*\{[\s\S]*?\.feature-row\.with-detail\s*\{[^}]*grid-template-columns:\s*1fr;/s,
+);
 assert.match(css, /\.modal-dialog\.comparison-gallery-modal-dialog\s*\{/);
 assert.match(css, /\.file-state\.warn\s*\{/);
 assert.match(css, /\.comparison-gallery\s*\{[^}]*display:\s*grid;/s);
@@ -123,14 +125,6 @@ function extractSection(source, id) {
   return source.slice(start, nextView);
 }
 
-function extractBetween(source, startMarker, endMarker) {
-  const start = source.indexOf(startMarker);
-  assert.notEqual(start, -1, `${startMarker} exists`);
-  const end = source.indexOf(endMarker, start + startMarker.length);
-  assert.notEqual(end, -1, `${endMarker} exists after ${startMarker}`);
-  return source.slice(start, end);
-}
-
 function extractFeatureRow(source, marker) {
   const markerIndex = source.indexOf(marker);
   assert.notEqual(markerIndex, -1, `${marker} exists`);
@@ -144,4 +138,12 @@ function extractFeatureRow(source, marker) {
   }
 
   return source.slice(rowStart, rowEnd);
+}
+
+function gameTweaksView() {
+  return extractSection(html, "gameTweaksView");
+}
+
+function countMatches(source, pattern) {
+  return source.match(pattern)?.length ?? 0;
 }
