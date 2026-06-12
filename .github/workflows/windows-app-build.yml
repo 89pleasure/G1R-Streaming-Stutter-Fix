@@ -26,16 +26,15 @@ jobs:
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Cache Cargo registry and build output
+      - name: Cache Cargo registry
         uses: actions/cache@v4
         with:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
-            app/src-tauri/target
-          key: windows-tauri-${{ runner.os }}-${{ hashFiles('Cargo.lock', 'app/src-tauri/Cargo.toml', 'optimizer-core/Cargo.toml', 'app/package-lock.json') }}
+          key: windows-cargo-registry-${{ runner.os }}-${{ hashFiles('Cargo.lock', 'app/src-tauri/Cargo.lock', 'app/src-tauri/Cargo.toml', 'optimizer-core/Cargo.toml') }}
           restore-keys: |
-            windows-tauri-${{ runner.os }}-
+            windows-cargo-registry-${{ runner.os }}-
 
       - name: Install NSIS
         shell: powershell
