@@ -1,22 +1,50 @@
-G1R - Streaming Stutter Fix
-Version: 1.0.0
+G1R Optimizer - Streaming Stutter Fix
+Version: 1.1.0
 
-WHAT THIS MOD DOES
+WHAT THIS TOOL DOES
 
-G1R ships with very small texture streaming pools in its scalability presets.
-At Texture Quality Overdose, the default pool is only 1000 MB. On GPUs with
-8 GB, 12 GB, 16 GB, 20 GB or more VRAM, this can create unnecessary texture
-streaming pressure, pop-in and frametime drops.
+G1R Optimizer is a desktop tool for Gothic 1 Remake. It applies two main tuning
+paths without requiring manual INI file copying: the G1R Streaming Stutter Fix
+for texture streaming pressure, and Balanced Overdose Performance for
+substantially higher FPS on the Overdose profile.
 
-This mod raises the texture streaming pool based on your GPU VRAM and adds
-conservative shader/loading tweaks. It does not lower Lumen, Nanite, shadows,
-foliage, resolution or texture quality.
+G1R ships with very small texture streaming pools in its scalability presets. At
+Texture Quality Overdose, the default pool is only 1000 MB. On GPUs with 8 GB,
+12 GB, 16 GB, 20 GB or more VRAM, this can create unnecessary texture streaming
+pressure, pop-in and frametime drops.
 
-The desktop app can optionally add Balanced Performance Tweaks. This is off by
-default and does not write GameUserSettings.ini.
+The base streaming fix raises the texture streaming pool based on your GPU VRAM
+and can add conservative shader/loading tweaks. It does not lower Lumen, Nanite,
+shadows, foliage, resolution or texture quality. Optional performance toggles
+are separate, previewed changes and may trade some visual quality for
+performance.
+
+Balanced Performance Tweaks are optional and off by default. In tested
+comparison scenes, the Overdose-only Balanced profile improved performance by
+about 20-30 FPS while keeping Lumen, Nanite and virtual shadows enabled.
+
+Additional optional features include shader/PSO stutter tests, Game.ini intro
+video skipping, backups, restore and Reset to Vanilla.
 
 
-CONFIG LOCATION
+DESKTOP TOOL INSTALLATION
+
+1. Close Gothic 1 Remake completely.
+2. Start G1R Optimizer.
+3. Use the detected config folder, or browse to the config folder listed below.
+4. Select the recommended preset, choose another VRAM preset, or enter a custom
+   texture pool size.
+5. Enable any optional performance or game tweaks you want.
+6. Review the preview. If existing INI files contain custom settings, choose
+   Merge to keep them or Use App Settings Only to replace them.
+7. Press Optimize.
+8. Start the game and test.
+
+The app creates backups before replacing managed config files. Backup restore
+and Reset to Vanilla are available inside the desktop UI.
+
+
+CONFIG LOCATIONS
 
 Windows / Steam:
 %LOCALAPPDATA%\G1R\Saved\Config\Windows\
@@ -29,7 +57,17 @@ Gothic\Saved\Config\WindowsNoEditor
 G1R_NyrasDemo\Saved\Config\Windows
 
 
-INSTALLATION
+MANUAL PRESET FALLBACK
+
+Manual INI installation is still possible, but the desktop tool is the
+recommended path.
+
+For manual editing, prefer the app's Copy function. Select the preset and
+optional tweaks in G1R Optimizer, press Copy, then paste the generated
+app-managed settings into your own INI files. This keeps manual edits aligned
+with the current desktop tool output.
+
+The bundled preset folders are a lower-level fallback:
 
 1. Close Gothic 1 Remake completely.
 2. Open the config folder listed above.
@@ -61,9 +99,10 @@ preset lower.
 
 NOTES
 
-This is mainly a stutter/frametime/streaming fix, not a guaranteed average FPS
-mod. Average FPS can improve if the game was being limited by streaming
-pressure, but the primary goal is smoother gameplay.
+The streaming fix and Balanced Overdose Performance target different problems.
+The streaming fix targets texture pop-in, streaming pressure and frametime
+instability. Balanced Overdose Performance targets average FPS on the Overdose
+profile and may trade some visual quality for speed.
 
 r.MotionBlurQuality=0 is included because many players disable motion blur in
 the menu, but the engine profile behind Overdose still sets the engine-side

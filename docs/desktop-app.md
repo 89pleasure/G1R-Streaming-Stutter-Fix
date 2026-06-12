@@ -1,6 +1,8 @@
 # Desktop App Architecture
 
-The desktop app is split into a Rust optimizer core and a Tauri shell.
+G1R Optimizer is split into a Rust optimizer core and a Tauri desktop shell. The
+desktop app is now the primary distribution path; the raw INI presets remain as
+bundled app resources and as a manual fallback.
 
 ## Layout
 
@@ -17,9 +19,14 @@ Presets/              Bundled INI presets used by the app
 
 - scan `Presets/` folders
 - detect common Windows and Linux/Proton Gothic 1 Remake config paths
+- detect hardware and recommend a matching preset
 - preview target changes
-- back up existing `Engine.ini` and `Scalability.ini`
-- install selected preset files
+- generate selected `Engine.ini`, `Scalability.ini` and `Game.ini` content
+- back up existing managed INI files
+- classify existing files as clean, modified, untracked or unknown
+- merge app-managed settings into existing custom INI files when requested
+- install selected optimizer settings
+- reset managed files back to vanilla by removing them after backup
 - restore app-created backups
 
 The core currently avoids third-party dependencies so it can be tested quickly
@@ -32,12 +39,26 @@ functions as Tauri commands:
 
 - `get_app_state`
 - `preview_install`
+- `ini_file_contents`
 - `install_preset`
 - `list_backups`
 - `restore_backup`
+- `reset_to_vanilla`
 
 The app sets `withGlobalTauri` to `true` so the static UI can call
 `window.__TAURI__.core.invoke(...)` without a frontend bundler.
+
+## UI Responsibilities
+
+`app/ui` owns the static desktop interface:
+
+- streaming preset selection, including custom pool size
+- optional performance tweaks
+- optional game tweaks
+- config folder selection and detected path display
+- preview, overwrite warning, merge/replace choice and Optimize action
+- backups, restore, reset and diagnostics
+- localized text through `app/ui/locales`
 
 ## Packaging
 

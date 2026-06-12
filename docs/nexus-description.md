@@ -1,7 +1,9 @@
-# G1R - Streaming Stutter Fix
+# G1R Optimizer - Streaming Stutter Fix
 
-VRAM-based texture streaming presets to reduce pop-in, streaming pressure and
-frametime drops in Gothic 1 Remake.
+Desktop tool for Gothic 1 Remake that applies two main tuning paths without
+requiring manual INI file copying: VRAM-based texture streaming fixes for
+stutter/pop-in, and Balanced Overdose Performance for substantially higher FPS
+on the Overdose profile.
 
 ## Why
 
@@ -18,20 +20,33 @@ Many players use Texture Quality Overdose on modern GPUs, which means the
 default pool can still be only `1000 MB`. On GPUs with 8-24 GB VRAM this can
 cause unnecessary texture streaming pressure, texture pop-in and frametime drops.
 
-This mod raises the texture streaming pool based on your GPU VRAM and adds
-conservative shader/loading tweaks. It does not reduce Lumen, Nanite, shadow
-quality, texture quality, view distance or resolution.
+The base streaming fix raises the texture streaming pool based on your GPU VRAM
+and can add conservative shader/loading tweaks. It does not reduce Lumen, Nanite,
+shadow quality, texture quality, view distance or resolution.
 
-The desktop app also offers optional `Balanced Performance Tweaks`. This mode is
-off by default and adds conservative `Scalability.ini` caps for the Overdose
-profile without writing `GameUserSettings.ini`. It is labeled `Overdose only`
-because the current tweak set targets the Overdose profile, not the lower
-profiles.
+Balanced Overdose Performance is the second main feature. It is optional, off by
+default, and applies conservative `Scalability.ini` caps only to the Overdose
+profile. In tested comparison scenes, it improved performance by about 20-30 FPS
+while keeping Lumen, Nanite and virtual shadows enabled. The trade-offs are
+focused on shadow, reflection, volumetric and post-processing cost.
 
-The desktop app also includes optional `Game Tweaks`, starting with `Skip Intro
-Videos`. This writes `Game.ini` to skip startup logo/legal movies while keeping
-the engine loading screen. Unlike file-replacement intro skip mods, it does not
-delete, overwrite, or rename the game's original video files.
+The desktop tool:
+
+- detects common Windows and Linux/Proton config folders
+- recommends a VRAM preset when hardware detection is available
+- previews changes before writing files
+- backs up existing `Engine.ini`, `Scalability.ini` and `Game.ini`
+- can merge app settings into existing custom INI files
+- can restore backups or reset managed files back to vanilla
+
+Optional `Balanced Performance Tweaks` do not write `GameUserSettings.ini`. This
+mode is labeled `Overdose only` because the current tweak set targets the
+Overdose profile, not the lower profiles.
+
+Optional `Game Tweaks` include `Skip Intro Videos`. This writes `Game.ini` to
+skip startup logo/legal movies while keeping the engine loading screen. Unlike
+file-replacement intro skip mods, it does not delete, overwrite, or rename the
+game's original video files.
 
 ## Presets
 
@@ -55,16 +70,20 @@ preset lower.
 ## Installation
 
 1. Close Gothic 1 Remake completely.
-2. Go to:
+2. Start G1R Optimizer.
+3. Use the detected config folder, or browse to:
 
    ```text
    %LOCALAPPDATA%\G1R\Saved\Config\Windows\
    ```
 
-3. Back up `Engine.ini` and `Scalability.ini` if they exist.
-4. Copy `Engine.ini` and `Scalability.ini` from your chosen preset folder.
-5. Set `Engine.ini` and `Scalability.ini` to read-only.
-6. Launch and test.
+4. Select the recommended preset, choose another VRAM preset, or enter a custom
+   texture pool size.
+5. Enable optional performance or game tweaks if wanted.
+6. Review the preview. If existing INI files contain custom settings, choose
+   `Merge` to keep them or `Use App Settings Only` to replace them.
+7. Press `Optimize`.
+8. Launch and test.
 
 Linux / Proton users can use the matching Proton prefix path:
 
@@ -72,8 +91,14 @@ Linux / Proton users can use the matching Proton prefix path:
 steamapps/compatdata/1297900/pfx/drive_c/users/steamuser/AppData/Local/G1R/Saved/Config/Windows/
 ```
 
+Manual INI installation from the bundled `Presets` folders is still possible,
+but the desktop tool is the recommended path. For manual editing, prefer the
+app's `Copy` function: select the preset and optional tweaks in G1R Optimizer,
+press `Copy`, then paste the generated app-managed settings into your own INI
+files.
+
 ## Notes
 
-This is primarily a stutter/frametime/streaming fix, not a guaranteed average
-FPS mod. Average FPS can improve if the game was being limited by streaming
-pressure, but the primary goal is smoother gameplay.
+The streaming fix and Balanced Overdose Performance target different problems:
+the streaming fix targets pop-in, streaming pressure and frametime instability;
+Balanced Overdose Performance targets average FPS on the Overdose profile.

@@ -1,12 +1,25 @@
 # Changelog
 
+## Unreleased
+
+- Repositioned the public documentation around `G1R Optimizer` as the primary
+  desktop tool workflow.
+- Presented the Streaming Stutter Fix and Balanced Overdose Performance as
+  equal main features, including the observed 20-30 FPS uplift in tested
+  Overdose comparison scenes.
+- Documented manual INI preset copying as a fallback instead of the recommended
+  installation path.
+
 ## 1.1.0
 
-- Added an early Tauri/Rust desktop app scaffold.
+- Added the Tauri/Rust desktop app workflow for preset installation and config
+  optimization.
 - Added a separate Rust optimizer core for preset discovery, path detection,
-  install preview, backups and restore.
-- Added a static desktop UI for preset selection and config installation.
-- Added optional balanced `Engine.ini` performance tweaks in the desktop app.
+  hardware recommendations, install preview, backups, restore and reset.
+- Added a static desktop UI for preset selection, optional tweaks, config
+  installation and diagnostics.
+- Added optional balanced `Scalability.ini` performance tweaks in the desktop
+  app.
 
 ## 1.0.0
 
