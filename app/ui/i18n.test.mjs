@@ -5,16 +5,37 @@ import {
   LANGUAGE_AUTO,
   applyTranslationsToDocument,
   createTranslator,
+  languageOptions,
   resolveLanguage,
   translationKeys,
 } from "./i18n.js";
 import { translations } from "./locales/index.js";
 
+const supportedLanguageValues = [
+  "auto",
+  "en",
+  "de",
+  "pl",
+  "es",
+  "fr",
+  "it",
+  "ru",
+  "ja",
+  "zh",
+  "pt",
+];
+
 assert.equal(DEFAULT_LANGUAGE, "en");
 assert.equal(LANGUAGE_AUTO, "auto");
+assert.deepEqual(
+  languageOptions.map((option) => option.value),
+  supportedLanguageValues,
+);
 assert.equal(resolveLanguage("auto", ["de-DE", "en-US"]), "de");
 assert.equal(resolveLanguage("auto", ["pl-PL", "de-DE"]), "pl");
-assert.equal(resolveLanguage("auto", ["fr-FR"]), "en");
+assert.equal(resolveLanguage("auto", ["fr-FR"]), "fr");
+assert.equal(resolveLanguage("auto", ["ja-JP", "en-US"]), "ja");
+assert.equal(resolveLanguage("auto", ["zh-CN", "en-US"]), "zh");
 assert.equal(resolveLanguage("de", ["en-US"]), "de");
 assert.equal(resolveLanguage("unsupported", ["pl-PL"]), "pl");
 

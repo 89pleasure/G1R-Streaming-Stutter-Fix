@@ -8,6 +8,13 @@ export const languageOptions = [
   { value: "en", labelKey: "language.en" },
   { value: "de", labelKey: "language.de" },
   { value: "pl", labelKey: "language.pl" },
+  { value: "es", labelKey: "language.es" },
+  { value: "fr", labelKey: "language.fr" },
+  { value: "it", labelKey: "language.it" },
+  { value: "ru", labelKey: "language.ru" },
+  { value: "ja", labelKey: "language.ja" },
+  { value: "zh", labelKey: "language.zh" },
+  { value: "pt", labelKey: "language.pt" },
 ];
 
 const supportedLanguages = new Set(Object.keys(translations));

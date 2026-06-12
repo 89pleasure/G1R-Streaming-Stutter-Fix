@@ -6,7 +6,11 @@ const css = await readFile(new URL("./styles.css", import.meta.url), "utf8");
 const main = await readFile(new URL("./main.js", import.meta.url), "utf8");
 const optimizeStreamingView = extractSection(html, "optimizeStreamingView");
 
-assert.match(optimizeStreamingView, /class="panel preset-panel"/);
+assert.match(
+  optimizeStreamingView,
+  /class="panel feature-card streaming-fixes-card"[\s\S]*<section class="preset-panel" id="presetPanel"/,
+);
+assert.doesNotMatch(optimizeStreamingView, /class="panel preset-panel"/);
 assert.doesNotMatch(optimizeStreamingView, /class="panel explanation-panel"/);
 assert.doesNotMatch(optimizeStreamingView, /id="streamingInfoTitle"/);
 assert.doesNotMatch(optimizeStreamingView, /id="streamingInfoTag"/);

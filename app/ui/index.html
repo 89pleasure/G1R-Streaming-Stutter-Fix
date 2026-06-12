@@ -129,42 +129,46 @@
                   </dl>
                 </div>
               </div>
-            </section>
 
-            <section class="panel preset-panel" id="presetPanel" aria-labelledby="presetHeading">
-              <div class="panel-header">
-                <h2 id="presetHeading" data-i18n="preset.heading">Streaming Preset</h2>
-                <div class="panel-actions">
-                  <span class="pill" id="presetCount">0 presets</span>
+              <section class="preset-panel" id="presetPanel" aria-labelledby="presetHeading">
+                <div class="panel-header">
+                  <h2 id="presetHeading" data-i18n="preset.heading">Streaming Preset</h2>
+                  <div class="panel-actions">
+                    <span class="pill" id="presetCount">0 presets</span>
+                  </div>
                 </div>
-              </div>
-              <div class="preset-grid" id="presetGrid"></div>
-              <div class="custom-pool-panel" id="customPoolPanel" hidden>
-                <label class="custom-pool-label" for="customPoolInput" data-i18n="customPool.label">
-                  Custom pool size
-                </label>
-                <div class="custom-pool-input-row">
-                  <input
-                    id="customPoolInput"
-                    type="number"
-                    min="512"
-                    max="65536"
-                    step="256"
-                    inputmode="numeric"
-                  />
-                  <span class="custom-pool-unit">MB</span>
+                <div class="preset-grid" id="presetGrid"></div>
+                <div class="custom-pool-panel" id="customPoolPanel" hidden>
+                  <label
+                    class="custom-pool-label"
+                    for="customPoolInput"
+                    data-i18n="customPool.label"
+                  >
+                    Custom pool size
+                  </label>
+                  <div class="custom-pool-input-row">
+                    <input
+                      id="customPoolInput"
+                      type="number"
+                      min="512"
+                      max="65536"
+                      step="256"
+                      inputmode="numeric"
+                    />
+                    <span class="custom-pool-unit">MB</span>
+                  </div>
+                  <p class="custom-pool-hint" id="customPoolHint" data-i18n="customPool.hint">
+                    Use a value between 512 and 65536 MB. 256 MB steps are recommended.
+                  </p>
                 </div>
-                <p class="custom-pool-hint" id="customPoolHint" data-i18n="customPool.hint">
-                  Use a value between 512 and 65536 MB. 256 MB steps are recommended.
-                </p>
-              </div>
-              <div
-                class="recommendation-summary"
-                id="recommendationSummary"
-                data-i18n="recommendation.unavailable"
-              >
-                Hardware recommendation unavailable.
-              </div>
+                <div
+                  class="recommendation-summary"
+                  id="recommendationSummary"
+                  data-i18n="recommendation.unavailable"
+                >
+                  Hardware recommendation unavailable.
+                </div>
+              </section>
             </section>
 
             <section
@@ -200,7 +204,7 @@
                         </span>
                         <span class="impact-list">
                           <span data-i18n="feature.d3d12.impactFile">Engine.ini</span>
-                          <span data-i18n="feature.d3d12.impactNoFps">No FPS target</span>
+                          <span data-i18n="feature.d3d12.impactStability">Stability</span>
                           <span data-i18n="feature.d3d12.impactSpike">Spike test</span>
                         </span>
                       </span>
@@ -251,7 +255,7 @@
                         </span>
                         <span class="impact-list">
                           <span data-i18n="feature.runtimePso.impactFile">Engine.ini</span>
-                          <span data-i18n="feature.runtimePso.impactNoFps">No FPS target</span>
+                          <span data-i18n="feature.runtimePso.impactStability">Stability</span>
                           <span data-i18n="feature.runtimePso.impactStutter">Stutter test</span>
                         </span>
                       </span>
@@ -299,7 +303,7 @@
                         </span>
                         <span class="impact-list">
                           <span data-i18n="feature.gc.impactFile">Engine.ini</span>
-                          <span data-i18n="feature.gc.impactNoFps">No FPS target</span>
+                          <span data-i18n="feature.gc.impactStability">Stability</span>
                           <span data-i18n="feature.gc.impactFrameTime">Frame-time test</span>
                         </span>
                       </span>
@@ -608,9 +612,9 @@
                 class="secondary-button"
                 id="copyIniButton"
                 type="button"
-                data-i18n="actions.copyPaste"
+                data-i18n="actions.copy"
               >
-                Copy &amp; Paste
+                Copy
               </button>
               <span class="action-status" id="optimizeStatus" aria-live="polite" hidden></span>
             </div>

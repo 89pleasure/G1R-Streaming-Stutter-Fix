@@ -118,3 +118,13 @@ function createMemoryStorage() {
 
   assert.equal(loadUiPreferences(storage).language, "auto");
 }
+
+for (const language of ["es", "fr", "it", "ru", "ja", "zh", "pt"]) {
+  const storage = createMemoryStorage();
+  storage.setItem(
+    "g1r-optimizer.ui-preferences.v1",
+    JSON.stringify({ language }),
+  );
+
+  assert.equal(loadUiPreferences(storage).language, language);
+}

@@ -1,6 +1,18 @@
 const PREFERENCES_KEY = "g1r-optimizer.ui-preferences.v1";
 const VOLUMETRIC_FOG_MODES = new Set(["normal", "low", "off"]);
-const LANGUAGE_PREFERENCES = new Set(["auto", "en", "de", "pl"]);
+const LANGUAGE_PREFERENCES = new Set([
+  "auto",
+  "en",
+  "de",
+  "pl",
+  "es",
+  "fr",
+  "it",
+  "ru",
+  "ja",
+  "zh",
+  "pt",
+]);
 const DEFAULT_CUSTOM_POOL_MB = 12288;
 
 const DEFAULT_UI_PREFERENCES = {

@@ -294,6 +294,15 @@ h3 {
   white-space: nowrap;
 }
 
+.preset-panel {
+  min-width: 0;
+  border-top: 1px solid #2d3133;
+}
+
+.streaming-fixes-card .preset-panel .panel-header {
+  background: rgba(22, 23, 23, 0.42);
+}
+
 .preset-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(128px, 1fr));
