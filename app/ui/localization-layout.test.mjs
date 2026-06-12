@@ -13,6 +13,7 @@ assert.match(html, /data-i18n-aria-label="nav\.viewsAria"/);
 assert.match(html, /data-i18n="feature\.streaming\.title"/);
 assert.match(html, /data-i18n="feature\.streaming\.description"/);
 assert.match(html, /data-i18n="feature\.streaming\.detailText"/);
+assert.match(html, /id="pageSubtitle"[^>]*data-i18n="views\.optimizeStreaming\.subtitle"/);
 
 assert.match(settingsView, /id="languageSelect"/);
 assert.match(settingsView, /data-i18n="settings\.languageHeading"/);
@@ -25,6 +26,29 @@ assert.match(mainJs, /languageOptions/);
 assert.match(mainJs, /resolveLanguage/);
 assert.match(mainJs, /language: state\.languagePreference/);
 assert.match(mainJs, /elements\.languageSelect\.addEventListener\("change"/);
+assert.match(mainJs, /const viewSubtitleKeys = \{/);
+for (const view of [
+  "optimizeStreaming",
+  "performance",
+  "gameTweaks",
+  "backups",
+  "diagnostics",
+  "settings",
+]) {
+  assert.match(mainJs, new RegExp(`${view}: "views\\.${view}\\.subtitle"`));
+}
+assert.match(mainJs, /elements\.pageSubtitle\.textContent = translate\(/);
+
+for (const key of [
+  "views.optimizeStreaming.subtitle",
+  "views.performance.subtitle",
+  "views.gameTweaks.subtitle",
+  "views.backups.subtitle",
+  "views.diagnostics.subtitle",
+  "views.settings.subtitle",
+]) {
+  assert.ok(Object.hasOwn(translations.en, key), `${key} must exist in English translations`);
+}
 
 for (const key of i18nKeys(html)) {
   assert.ok(Object.hasOwn(translations.en, key), `${key} must exist in English translations`);

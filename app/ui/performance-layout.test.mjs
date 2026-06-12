@@ -94,6 +94,7 @@ assert.match(mainJs, /modification_state/);
 assert.match(css, /#performanceView\.view\.active\s*\{[^}]*align-content:\s*stretch;/s);
 assert.match(css, /#performanceView\.view\.active\s*\{[^}]*overflow:\s*hidden;/s);
 assert.match(css, /\.feature-card-list\s*\{[^}]*display:\s*grid;/s);
+assert.match(css, /\.feature-card-list\s*\{[^}]*grid-auto-rows:\s*max-content;/s);
 assert.match(css, /\.feature-card\s+\.feature-row\s*\{[^}]*border-bottom:\s*0;/s);
 assert.match(css, /#performanceView > \.layout-grid\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\);/s);
 assert.match(css, /\.feature-actions\s*\{/);

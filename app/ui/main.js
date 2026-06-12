@@ -54,6 +54,15 @@ const viewTitleKeys = {
   settings: "views.settings",
 };
 
+const viewSubtitleKeys = {
+  optimizeStreaming: "views.optimizeStreaming.subtitle",
+  performance: "views.performance.subtitle",
+  gameTweaks: "views.gameTweaks.subtitle",
+  backups: "views.backups.subtitle",
+  diagnostics: "views.diagnostics.subtitle",
+  settings: "views.settings.subtitle",
+};
+
 const viewsWithPreview = new Set(["optimizeStreaming", "performance", "gameTweaks"]);
 
 const elements = {};
@@ -78,7 +87,7 @@ function bindElements() {
     "runtimeStatus",
     "workspace",
     "pageTitle",
-    "appStatus",
+    "pageSubtitle",
     "refreshButton",
     "presetPanel",
     "streamingFixesToggle",
@@ -413,7 +422,6 @@ async function loadAppState() {
       state.targetDir = bestCandidate.path;
     }
 
-    elements.appStatus.textContent = translate("status.presetLoaded");
     elements.runtimeStatus.textContent = hasTauriApi()
       ? translate("runtime.tauri")
       : translate("runtime.static");
@@ -421,7 +429,6 @@ async function loadAppState() {
     await refreshPreview();
     await loadBackups();
   } catch (error) {
-    elements.appStatus.textContent = translate("status.failedLoad");
     appendLog(translate("logs.loadFailed", { error }));
     renderAll();
   } finally {
@@ -1188,6 +1195,9 @@ function renderPageChrome() {
   const previewVisible = viewsWithPreview.has(state.currentView);
   elements.pageTitle.textContent = translate(
     viewTitleKeys[state.currentView] ?? "views.optimizeStreaming",
+  );
+  elements.pageSubtitle.textContent = translate(
+    viewSubtitleKeys[state.currentView] ?? "views.optimizeStreaming.subtitle",
   );
   elements.previewPanel.hidden = !previewVisible;
   elements.workspace.classList.toggle("preview-visible", previewVisible);
