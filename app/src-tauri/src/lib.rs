@@ -1,15 +1,18 @@
 use optimizer_core::{
-    detect_config_paths, detect_hardware, ini_file_contents as core_ini_file_contents,
-    install_preset_with_strategy as core_install_preset, list_backups as core_list_backups,
-    list_presets, preview_install as core_preview_install, recommend_preset_for_hardware,
-    reset_to_vanilla as core_reset_to_vanilla, restore_backup as core_restore_backup, BackupInfo,
-    ConfigCandidate, FileInstallReport, FileModificationState, FilePreview, GpuInfo, GpuVendor,
-    HardwareConfidence, HardwareSnapshot, IniFileContent, InstallOptions, InstallReport,
-    InstallStrategy, Preset, PresetRecommendation, ResetReport, RestoreReport,
+    detect_config_paths, detect_hardware, detect_launch_candidates,
+    ini_file_contents as core_ini_file_contents, install_preset_with_strategy as core_install_preset,
+    list_backups as core_list_backups, list_presets, preview_install as core_preview_install,
+    recommend_preset_for_hardware, reset_to_vanilla as core_reset_to_vanilla,
+    restore_backup as core_restore_backup, BackupInfo, ConfigCandidate, FileInstallReport,
+    FileModificationState, FilePreview, GpuInfo, GpuVendor, HardwareConfidence, HardwareSnapshot,
+    IniFileContent, InstallOptions, InstallReport, InstallStrategy, LaunchCandidate,
+    LaunchCandidateKind, Preset, PresetRecommendation, ResetReport, RestoreReport,
+    GOTHIC_1_REMAKE_STEAM_URI,
 };
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::env;
 use std::path::{Path, PathBuf};
+use std::process::Command;
 use tauri::path::BaseDirectory;
 use tauri::{AppHandle, Manager};
 
@@ -18,6 +21,7 @@ struct AppStateDto {
     preset_root: String,
     presets: Vec<PresetDto>,
     candidates: Vec<ConfigCandidateDto>,
+    launch_candidates: Vec<LaunchCandidateDto>,
     hardware: HardwareSnapshotDto,
     recommendation: Option<PresetRecommendationDto>,
 }
@@ -32,6 +36,16 @@ struct PresetDto {
 
 #[derive(Debug, Serialize)]
 struct ConfigCandidateDto {
+    label: String,
+    path: String,
+    exists: bool,
+    source: String,
+}
+
+#[derive(Debug, Serialize)]
+struct LaunchCandidateDto {
+    id: String,
+    kind: String,
     label: String,
     path: String,
     exists: bool,
@@ -129,6 +143,24 @@ struct ResetReportDto {
     removed_files: Vec<String>,
 }
 
+#[derive(Debug, Deserialize)]
+struct LaunchGameRequest {
+    kind: String,
+    path: String,
+}
+
+#[derive(Debug, Serialize)]
+struct LaunchReportDto {
+    kind: String,
+    path: String,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+struct LaunchCommand {
+    program: String,
+    args: Vec<String>,
+}
+
 #[tauri::command]
 fn get_app_state(app: AppHandle) -> Result<AppStateDto, String> {
     let preset_root = resolve_preset_root(&app)?;
@@ -140,11 +172,16 @@ fn get_app_state(app: AppHandle) -> Result<AppStateDto, String> {
         .into_iter()
         .map(ConfigCandidateDto::from)
         .collect();
+    let launch_candidates = detect_launch_candidates(None)
+        .into_iter()
+        .map(LaunchCandidateDto::from)
+        .collect();
 
     Ok(AppStateDto {
         preset_root: path_to_string(&preset_root),
         presets: preset_dtos,
         candidates,
+        launch_candidates,
         hardware: HardwareSnapshotDto::from(hardware),
         recommendation: recommendation.map(PresetRecommendationDto::from),
     })
@@ -300,6 +337,27 @@ fn reset_to_vanilla(target_dir: String) -> Result<ResetReportDto, String> {
     Ok(ResetReportDto::from(report))
 }
 
+#[tauri::command]
+fn launch_game(request: LaunchGameRequest) -> Result<LaunchReportDto, String> {
+    if request.kind == "executable" {
+        let executable = PathBuf::from(request.path.trim());
+        if !executable.is_file() {
+            return Err(format!("game executable not found at '{}'", executable.display()));
+        }
+    }
+
+    let command = launch_command_for_request(&request)?;
+    Command::new(&command.program)
+        .args(&command.args)
+        .spawn()
+        .map_err(|error| format!("failed to launch game: {error}"))?;
+
+    Ok(LaunchReportDto {
+        kind: request.kind,
+        path: request.path,
+    })
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     configure_linux_webview_environment();
@@ -313,7 +371,8 @@ pub fn run() {
             install_preset,
             list_backups,
             restore_backup,
-            reset_to_vanilla
+            reset_to_vanilla,
+            launch_game
         ])
         .run(tauri::generate_context!())
         .expect("error while running Tauri application");
@@ -503,6 +562,61 @@ fn parse_install_strategy(value: &str) -> Result<InstallStrategy, String> {
     }
 }
 
+fn launch_command_for_request(request: &LaunchGameRequest) -> Result<LaunchCommand, String> {
+    match request.kind.as_str() {
+        "steam" => Ok(LaunchCommand {
+            program: platform_open_program(),
+            args: platform_open_args(GOTHIC_1_REMAKE_STEAM_URI),
+        }),
+        "executable" => {
+            let path = request.path.trim();
+            if path.is_empty() {
+                return Err("game executable path is empty".to_string());
+            }
+
+            Ok(LaunchCommand {
+                program: path.to_string(),
+                args: Vec::new(),
+            })
+        }
+        value => Err(format!("invalid launch target kind '{value}'")),
+    }
+}
+
+fn platform_open_program() -> String {
+    #[cfg(target_os = "windows")]
+    {
+        "cmd".to_string()
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        "open".to_string()
+    }
+
+    #[cfg(all(not(target_os = "windows"), not(target_os = "macos")))]
+    {
+        "xdg-open".to_string()
+    }
+}
+
+fn platform_open_args(target: &str) -> Vec<String> {
+    #[cfg(target_os = "windows")]
+    {
+        vec![
+            "/C".to_string(),
+            "start".to_string(),
+            "".to_string(),
+            target.to_string(),
+        ]
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    {
+        vec![target.to_string()]
+    }
+}
+
 impl From<FileInstallReport> for FileInstallReportDto {
     fn from(report: FileInstallReport) -> Self {
         Self {
@@ -557,5 +671,73 @@ impl From<ResetReport> for ResetReportDto {
             backup_dir: report.backup_dir.as_deref().map(path_to_string),
             removed_files: report.removed_files,
         }
+    }
+}
+
+impl From<LaunchCandidate> for LaunchCandidateDto {
+    fn from(candidate: LaunchCandidate) -> Self {
+        Self {
+            id: candidate.id,
+            kind: launch_candidate_kind_to_string(candidate.kind),
+            label: candidate.label,
+            path: path_to_string(&candidate.path),
+            exists: candidate.exists,
+            source: candidate.source,
+        }
+    }
+}
+
+fn launch_candidate_kind_to_string(kind: LaunchCandidateKind) -> String {
+    match kind {
+        LaunchCandidateKind::Steam => "steam",
+        LaunchCandidateKind::Executable => "executable",
+    }
+    .to_string()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{launch_command_for_request, platform_open_program, LaunchGameRequest};
+    use optimizer_core::GOTHIC_1_REMAKE_STEAM_URI;
+
+    #[test]
+    fn steam_launch_command_uses_steam_uri() {
+        let request = LaunchGameRequest {
+            kind: "steam".to_string(),
+            path: "/tmp/appmanifest_1297900.acf".to_string(),
+        };
+
+        let command = launch_command_for_request(&request).expect("command");
+
+        assert_eq!(command.program, platform_open_program());
+        assert!(
+            command
+                .args
+                .iter()
+                .any(|arg| arg == GOTHIC_1_REMAKE_STEAM_URI)
+        );
+    }
+
+    #[test]
+    fn executable_launch_command_uses_selected_path() {
+        let request = LaunchGameRequest {
+            kind: "executable".to_string(),
+            path: "/tmp/G1R.exe".to_string(),
+        };
+
+        let command = launch_command_for_request(&request).expect("command");
+
+        assert_eq!(command.program, "/tmp/G1R.exe");
+        assert!(command.args.is_empty());
+    }
+
+    #[test]
+    fn invalid_launch_kind_returns_error() {
+        let request = LaunchGameRequest {
+            kind: "unsupported".to_string(),
+            path: "/tmp/G1R.exe".to_string(),
+        };
+
+        assert!(launch_command_for_request(&request).is_err());
     }
 }
