@@ -19,12 +19,17 @@ assert.match(settingsView, /id="languageSelect"/);
 assert.match(settingsView, /data-i18n="settings\.languageHeading"/);
 assert.match(settingsView, /data-i18n="settings\.languageLabel"/);
 assert.match(settingsView, /data-i18n="settings\.languageHint"/);
+assert.match(settingsView, /id="launchTargetSelect"/);
+assert.match(settingsView, /id="manualExecutableInput"/);
+assert.match(settingsView, /id="browseExecutableButton"/);
+assert.match(html, /id="playButton"/);
 
 assert.match(mainJs, /from "\.\/i18n\.js"/);
 assert.match(mainJs, /applyTranslationsToDocument/);
 assert.match(mainJs, /languageOptions/);
 assert.match(mainJs, /resolveLanguage/);
 assert.match(mainJs, /language: state\.languagePreference/);
+assert.match(mainJs, /elements\.playButton\.addEventListener\("click", launchGame\)/);
 assert.match(mainJs, /elements\.languageSelect\.addEventListener\("change"/);
 assert.match(mainJs, /const viewSubtitleKeys = \{/);
 for (const view of [

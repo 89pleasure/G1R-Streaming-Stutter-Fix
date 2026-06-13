@@ -28,6 +28,8 @@ function createMemoryStorage() {
   assert.equal(preferences.lockGame, true);
   assert.equal(preferences.lockScalability, true);
   assert.equal(preferences.customPoolMb, 12288);
+  assert.equal(preferences.selectedLaunchTargetId, "");
+  assert.equal(preferences.manualExecutablePath, "");
   assert.equal(preferences.language, "auto");
 }
 
@@ -49,6 +51,8 @@ function createMemoryStorage() {
       customPoolMb: 16384,
       selectedPresetId: "20GB_VRAM_10240MB",
       targetDir: "/tmp/G1R/Config/Windows",
+      selectedLaunchTargetId: "steam:/tmp/appmanifest_1297900.acf",
+      manualExecutablePath: "/games/G1R/G1R.exe",
       language: "pl",
     },
     storage,
@@ -68,6 +72,8 @@ function createMemoryStorage() {
     customPoolMb: 16384,
     selectedPresetId: "20GB_VRAM_10240MB",
     targetDir: "/tmp/G1R/Config/Windows",
+    selectedLaunchTargetId: "steam:/tmp/appmanifest_1297900.acf",
+    manualExecutablePath: "/games/G1R/G1R.exe",
     language: "pl",
   });
 }

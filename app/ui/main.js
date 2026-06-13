@@ -17,11 +17,14 @@ const CUSTOM_POOL_STEP_MB = 256;
 const state = {
   presets: [],
   candidates: [],
+  launchCandidates: [],
   presetRoot: "",
   selectedPresetId: "",
+  selectedLaunchTargetId: "",
   recommendation: null,
   hardware: null,
   targetDir: "",
+  manualExecutablePath: "",
   customPoolMb: DEFAULT_CUSTOM_POOL_MB,
   preview: [],
   iniCopyFiles: [],
@@ -102,6 +105,10 @@ function bindElements() {
     "targetInput",
     "browseTargetButton",
     "pathStatus",
+    "launchTargetSelect",
+    "manualExecutableInput",
+    "browseExecutableButton",
+    "launchStatus",
     "lockEngineToggle",
     "lockGameToggle",
     "lockScalabilityToggle",
@@ -134,6 +141,7 @@ function bindElements() {
     "previewStatus",
     "previewRows",
     "copyIniButton",
+    "playButton",
     "optimizeButton",
     "optimizeStatus",
     "lastResult",
@@ -200,6 +208,8 @@ function applyStoredPreferences() {
   applyLanguagePreference(preferences.language, { render: false });
   state.selectedPresetId = preferences.selectedPresetId;
   state.targetDir = preferences.targetDir;
+  state.selectedLaunchTargetId = preferences.selectedLaunchTargetId;
+  state.manualExecutablePath = preferences.manualExecutablePath;
   state.customPoolMb = preferences.customPoolMb;
   elements.streamingFixesToggle.checked = preferences.streamingFixes;
   elements.balancedPerformanceToggle.checked = preferences.balancedPerformance;
@@ -228,6 +238,8 @@ function persistUiPreferences() {
     customPoolMb: state.customPoolMb,
     selectedPresetId: state.selectedPresetId,
     targetDir: state.targetDir,
+    selectedLaunchTargetId: state.selectedLaunchTargetId,
+    manualExecutablePath: state.manualExecutablePath,
     language: state.languagePreference,
   });
 }
@@ -243,6 +255,7 @@ function bindEvents() {
   elements.loadBackupsButton.addEventListener("click", loadBackups);
   elements.resetVanillaButton.addEventListener("click", resetToVanilla);
   elements.copyIniButton.addEventListener("click", openIniCopyModal);
+  elements.playButton.addEventListener("click", launchGame);
   elements.optimizeButton.addEventListener("click", optimizeSelectedPreset);
   elements.languageSelect.addEventListener("change", () => {
     applyLanguagePreference(elements.languageSelect.value, { render: true });
@@ -310,6 +323,24 @@ function bindEvents() {
   });
 
   elements.browseTargetButton.addEventListener("click", browseTargetFolder);
+  elements.browseExecutableButton.addEventListener("click", browseExecutableFile);
+
+  elements.launchTargetSelect.addEventListener("change", () => {
+    state.selectedLaunchTargetId = elements.launchTargetSelect.value;
+    persistUiPreferences();
+    renderLaunchSettings();
+    updateActionButtons();
+  });
+
+  elements.manualExecutableInput.addEventListener("input", () => {
+    state.manualExecutablePath = elements.manualExecutableInput.value;
+    if (state.manualExecutablePath.trim()) {
+      state.selectedLaunchTargetId = manualLaunchTargetId(state.manualExecutablePath);
+    }
+    persistUiPreferences();
+    renderLaunchSettings({ syncInputValue: false });
+    updateActionButtons();
+  });
 
   elements.customPoolInput.addEventListener("input", () => {
     const poolMb = selectedCustomPoolMb();
@@ -401,12 +432,37 @@ async function browseTargetFolder() {
   }
 }
 
+async function browseExecutableFile() {
+  if (!hasTauriApi() && !window.__TAURI__?.dialog?.open) {
+    appendLog(translate("logs.filePickerUnavailable"));
+    return;
+  }
+
+  setBusy(true);
+  try {
+    const selectedFile = await openExecutableDialog();
+    if (!selectedFile || Array.isArray(selectedFile)) {
+      return;
+    }
+
+    state.manualExecutablePath = selectedFile;
+    state.selectedLaunchTargetId = manualLaunchTargetId(selectedFile);
+    persistUiPreferences();
+    renderLaunchSettings();
+  } catch (error) {
+    appendLog(translate("logs.filePickerFailed", { error }));
+  } finally {
+    setBusy(false);
+  }
+}
+
 async function loadAppState() {
   setBusy(true);
   try {
     const appState = await invokeCommand("get_app_state");
     state.presets = appState.presets;
     state.candidates = appState.candidates;
+    state.launchCandidates = appState.launch_candidates ?? [];
     state.presetRoot = appState.preset_root;
     state.hardware = appState.hardware;
     state.recommendation = appState.recommendation ?? null;
@@ -420,6 +476,10 @@ async function loadAppState() {
     const bestCandidate = state.candidates.find((candidate) => candidate.exists) ?? state.candidates[0];
     if (!state.targetDir && bestCandidate) {
       state.targetDir = bestCandidate.path;
+    }
+
+    if (!availableLaunchTargets().some((target) => target.id === state.selectedLaunchTargetId)) {
+      state.selectedLaunchTargetId = preferredLaunchTarget()?.id ?? "";
     }
 
     elements.runtimeStatus.textContent = hasTauriApi()
@@ -442,6 +502,7 @@ function renderAll() {
   renderRecommendationSummary();
   renderCandidates();
   renderPathStatus();
+  renderLaunchSettings();
   renderPerformanceState();
   renderPerformanceComparison();
   renderGameTweaksState();
@@ -587,6 +648,50 @@ function renderPathStatus() {
   } else {
     elements.pathStatus.textContent = translate("pathStatus.manual");
     elements.pathStatus.className = "pill";
+  }
+}
+
+function renderLaunchSettings(options = {}) {
+  const { syncInputValue = true } = options;
+  const targets = availableLaunchTargets();
+  elements.launchTargetSelect.innerHTML = "";
+
+  if (targets.length === 0) {
+    const option = document.createElement("option");
+    option.value = "";
+    option.textContent = translate("launch.noTargets");
+    elements.launchTargetSelect.appendChild(option);
+  } else {
+    for (const target of targets) {
+      const option = document.createElement("option");
+      option.value = target.id;
+      option.textContent = launchTargetLabel(target);
+      option.selected = target.id === state.selectedLaunchTargetId;
+      elements.launchTargetSelect.appendChild(option);
+    }
+  }
+
+  elements.launchTargetSelect.value = state.selectedLaunchTargetId;
+  if (syncInputValue) {
+    elements.manualExecutableInput.value = state.manualExecutablePath;
+  }
+  renderLaunchStatus();
+}
+
+function renderLaunchStatus() {
+  const target = selectedLaunchTarget();
+  if (!target) {
+    elements.launchStatus.textContent = translate("pathStatus.missing");
+    elements.launchStatus.className = "pill bad";
+  } else if (target.source === "manual") {
+    elements.launchStatus.textContent = translate("pathStatus.manual");
+    elements.launchStatus.className = "pill warn";
+  } else if (target.exists) {
+    elements.launchStatus.textContent = translate("pathStatus.found");
+    elements.launchStatus.className = "pill good";
+  } else {
+    elements.launchStatus.textContent = translate("pathStatus.missing");
+    elements.launchStatus.className = "pill bad";
   }
 }
 
@@ -979,6 +1084,27 @@ async function resetToVanilla() {
   }
 }
 
+async function launchGame() {
+  const request = selectedLaunchRequest();
+  if (!request) {
+    showActionResult("error", translate("status.error"), translate("logs.launchNoTarget"), false);
+    appendLog(translate("logs.launchNoTarget"));
+    return;
+  }
+
+  setBusy(true);
+  try {
+    const report = await invokeCommand("launch_game", { request });
+    showActionResult("success", translate("status.success"), translate("logs.launchSuccess"), true);
+    appendLog(translate("logs.launchStarted", { target: report.path || report.kind }));
+  } catch (error) {
+    showActionResult("error", translate("status.error"), translate("result.launchFailed"), false);
+    appendLog(translate("logs.launchFailed", { error }));
+  } finally {
+    setBusy(false);
+  }
+}
+
 function openConfirmModal({ title, description, actions }) {
   if (confirmModalResolve) {
     return Promise.resolve(false);
@@ -1227,6 +1353,7 @@ function setBusy(busy) {
   elements.refreshButton.disabled = busy;
   elements.loadBackupsButton.disabled = busy;
   elements.browseTargetButton.disabled = busy;
+  elements.browseExecutableButton.disabled = busy;
   elements.resetVanillaButton.disabled = busy || !hasTauriApi();
   updateActionButtons();
 }
@@ -1240,6 +1367,7 @@ function updateActionButtons() {
     !selectedPresetIdForCommand() ||
     !selectedOptimizerChangesEnabled() ||
     !customPoolSelectionValid();
+  elements.playButton.disabled = state.busy || !hasTauriApi() || !selectedLaunchRequest();
 }
 
 function showActionResult(kind, statusText, detailText, autoHide) {
@@ -1527,6 +1655,69 @@ function selectedPresetLabel() {
   return preset ? presetLabel(preset) : state.selectedPresetId || translate("value.none");
 }
 
+function availableLaunchTargets() {
+  const targets = [...state.launchCandidates];
+  const manualPath = state.manualExecutablePath.trim();
+  if (manualPath) {
+    targets.push({
+      id: manualLaunchTargetId(manualPath),
+      kind: "executable",
+      label: translate("launch.manualLabel"),
+      path: manualPath,
+      exists: true,
+      source: "manual",
+    });
+  }
+
+  const seen = new Set();
+  return targets.filter((target) => {
+    if (seen.has(target.id)) {
+      return false;
+    }
+
+    seen.add(target.id);
+    return true;
+  });
+}
+
+function preferredLaunchTarget() {
+  const targets = availableLaunchTargets();
+  return (
+    targets.find((target) => target.kind === "steam" && target.exists) ??
+    targets.find((target) => target.kind === "executable" && target.exists) ??
+    targets[0] ??
+    null
+  );
+}
+
+function selectedLaunchTarget() {
+  return (
+    availableLaunchTargets().find((target) => target.id === state.selectedLaunchTargetId) ??
+    null
+  );
+}
+
+function selectedLaunchRequest() {
+  const target = selectedLaunchTarget();
+  if (!target || !target.path || (target.exists === false && target.source !== "manual")) {
+    return null;
+  }
+
+  return {
+    kind: target.kind,
+    path: target.path,
+  };
+}
+
+function manualLaunchTargetId(path) {
+  return `manual:${path.trim()}`;
+}
+
+function launchTargetLabel(target) {
+  const status = target.source === "manual" ? translate("pathStatus.manual") : translate("pathStatus.found");
+  return `${target.label} - ${status}`;
+}
+
 function selectedIniContentArgs() {
   return {
     presetId: selectedPresetIdForCommand(),
@@ -1559,6 +1750,22 @@ async function openTargetFolderDialog() {
     directory: true,
     multiple: false,
     defaultPath: state.targetDir || undefined,
+  };
+
+  if (window.__TAURI__?.dialog?.open) {
+    return window.__TAURI__.dialog.open(options);
+  }
+
+  return invokeCommand("plugin:dialog|open", { options });
+}
+
+async function openExecutableDialog() {
+  const options = {
+    title: translate("settings.browseExecutable"),
+    directory: false,
+    multiple: false,
+    defaultPath: state.manualExecutablePath || undefined,
+    filters: [{ name: translate("settings.executableFilter"), extensions: ["exe"] }],
   };
 
   if (window.__TAURI__?.dialog?.open) {
@@ -1615,6 +1822,16 @@ async function demoInvoke(command, args) {
           label: "Linux Steam Proton",
           path: "/home/user/.steam/steam/steamapps/compatdata/1297900/pfx/drive_c/users/steamuser/AppData/Local/G1R/Saved/Config/Windows",
           exists: false,
+          source: "Static preview",
+        },
+      ],
+      launch_candidates: [
+        {
+          id: "steam:/home/user/.steam/steam/steamapps/appmanifest_1297900.acf",
+          kind: "steam",
+          label: "Steam: Gothic 1 Remake",
+          path: "/home/user/.steam/steam/steamapps/appmanifest_1297900.acf",
+          exists: true,
           source: "Static preview",
         },
       ],
@@ -1704,6 +1921,13 @@ async function demoInvoke(command, args) {
       target_dir: args.targetDir,
       backup_dir: null,
       removed_files: [],
+    };
+  }
+
+  if (command === "launch_game") {
+    return {
+      kind: args.request.kind,
+      path: args.request.path,
     };
   }
 

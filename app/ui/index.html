@@ -618,6 +618,14 @@
               >
                 Copy
               </button>
+              <button
+                class="secondary-button play-button"
+                id="playButton"
+                type="button"
+                data-i18n="actions.play"
+              >
+                Play
+              </button>
               <span class="action-status" id="optimizeStatus" aria-live="polite" hidden></span>
             </div>
             <div class="last-result" id="lastResult" hidden data-i18n="lastResult.noChanges">
@@ -732,6 +740,41 @@
                 <span data-i18n="settings.lockScalability">Lock Scalability.ini</span>
               </label>
             </div>
+          </section>
+          <section class="panel target-panel" aria-labelledby="launchHeading">
+            <div class="panel-header">
+              <h2 id="launchHeading" data-i18n="settings.launchHeading">Game Launch</h2>
+              <span class="pill" id="launchStatus" data-i18n="pathStatus.unchecked">Unchecked</span>
+            </div>
+            <label class="field-label" for="launchTargetSelect" data-i18n="settings.launchTargets">
+              Launch target
+            </label>
+            <select id="launchTargetSelect"></select>
+            <label
+              class="field-label"
+              for="manualExecutableInput"
+              data-i18n="settings.executablePath"
+            >
+              Executable path
+            </label>
+            <div class="path-input-row">
+              <input id="manualExecutableInput" type="text" spellcheck="false" />
+              <button
+                class="secondary-button path-picker-button"
+                id="browseExecutableButton"
+                type="button"
+                aria-label="Browse for game executable"
+                title="Browse for game executable"
+                data-i18n-aria-label="settings.browseExecutable"
+                data-i18n-title="settings.browseExecutable"
+              >
+                ...
+              </button>
+            </div>
+            <p class="settings-hint" data-i18n="settings.launchHint">
+              Steam is preferred when the installed game is detected. Use the executable path for
+              custom installs.
+            </p>
           </section>
         </section>
       </section>
