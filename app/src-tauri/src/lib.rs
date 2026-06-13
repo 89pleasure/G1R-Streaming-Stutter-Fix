@@ -302,6 +302,8 @@ fn reset_to_vanilla(target_dir: String) -> Result<ResetReportDto, String> {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    configure_linux_webview_environment();
+
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .invoke_handler(tauri::generate_handler![
@@ -316,6 +318,17 @@ pub fn run() {
         .run(tauri::generate_context!())
         .expect("error while running Tauri application");
 }
+
+#[cfg(target_os = "linux")]
+fn configure_linux_webview_environment() {
+    // WebKitGTK's DMABUF renderer can fail on rolling-release Wayland/EGL setups.
+    if env::var_os("WEBKIT_DISABLE_DMABUF_RENDERER").is_none() {
+        env::set_var("WEBKIT_DISABLE_DMABUF_RENDERER", "1");
+    }
+}
+
+#[cfg(not(target_os = "linux"))]
+fn configure_linux_webview_environment() {}
 
 fn resolve_preset_root(app: &AppHandle) -> Result<PathBuf, String> {
     for candidate in preset_root_candidates(app) {
