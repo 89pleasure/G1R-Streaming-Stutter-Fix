@@ -20,6 +20,7 @@ Presets/              Bundled INI presets used by the app
 - scan `Presets/` folders
 - detect common Windows and Linux/Proton Gothic 1 Remake config paths
 - detect hardware and recommend a matching preset
+- detect Steam or executable launch targets for Gothic 1 Remake
 - preview target changes
 - generate selected `Engine.ini`, `Scalability.ini` and `Game.ini` content
 - back up existing managed INI files
@@ -44,6 +45,7 @@ functions as Tauri commands:
 - `list_backups`
 - `restore_backup`
 - `reset_to_vanilla`
+- `launch_game`
 
 The app sets `withGlobalTauri` to `true` so the static UI can call
 `window.__TAURI__.core.invoke(...)` without a frontend bundler.
@@ -56,6 +58,7 @@ The app sets `withGlobalTauri` to `true` so the static UI can call
 - optional performance tweaks
 - optional game tweaks
 - config folder selection and detected path display
+- game launch target selection and Play action
 - preview, overwrite warning, merge/replace choice and Optimize action
 - backups, restore, reset and diagnostics
 - localized text through `app/ui/locales`
