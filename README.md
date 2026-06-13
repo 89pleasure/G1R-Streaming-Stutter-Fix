@@ -83,6 +83,7 @@ G1R Optimizer wraps the INI presets with a safer workflow:
 - can reset managed config files back to vanilla
 - restores backups created by the app
 - can copy generated INI settings for manual use
+- can launch Gothic 1 Remake through Steam when detected, or through a selected executable fallback
 
 The optimizer core lives in `optimizer-core/` and is intentionally separate from
 the Tauri UI so it can also become a CLI later.
@@ -109,6 +110,11 @@ the Tauri UI so it can also become a CLI later.
 6. Review the preview. If existing INI files contain custom settings, choose
    `Merge` to keep those settings or `Use App Settings Only` to replace them.
 7. Press `Optimize`, then launch and test the game.
+
+The app also includes a `Play` button. It only starts Gothic 1 Remake and does
+not run `Optimize` automatically. When Steam ownership is detected, Play starts
+the game through Steam; otherwise the Settings page can use a detected or
+manually selected game executable.
 
 The app creates backups before replacing managed config files. Backup restore and
 `Reset to Vanilla` are available from the desktop UI.

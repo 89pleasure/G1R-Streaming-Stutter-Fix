@@ -29,6 +29,8 @@ const DEFAULT_UI_PREFERENCES = {
   customPoolMb: DEFAULT_CUSTOM_POOL_MB,
   selectedPresetId: "",
   targetDir: "",
+  selectedLaunchTargetId: "",
+  manualExecutablePath: "",
   language: "auto",
 };
 
@@ -83,6 +85,14 @@ export function loadUiPreferences(storage = window.localStorage) {
     targetDir: stringPreference(
       storedPreferences.targetDir,
       DEFAULT_UI_PREFERENCES.targetDir,
+    ),
+    selectedLaunchTargetId: stringPreference(
+      storedPreferences.selectedLaunchTargetId,
+      DEFAULT_UI_PREFERENCES.selectedLaunchTargetId,
+    ),
+    manualExecutablePath: stringPreference(
+      storedPreferences.manualExecutablePath,
+      DEFAULT_UI_PREFERENCES.manualExecutablePath,
     ),
     language: languagePreference(storedPreferences.language),
   };
@@ -143,6 +153,14 @@ function loadUiPreferencesFromObject(preferences) {
       DEFAULT_UI_PREFERENCES.selectedPresetId,
     ),
     targetDir: stringPreference(preferences.targetDir, DEFAULT_UI_PREFERENCES.targetDir),
+    selectedLaunchTargetId: stringPreference(
+      preferences.selectedLaunchTargetId,
+      DEFAULT_UI_PREFERENCES.selectedLaunchTargetId,
+    ),
+    manualExecutablePath: stringPreference(
+      preferences.manualExecutablePath,
+      DEFAULT_UI_PREFERENCES.manualExecutablePath,
+    ),
     language: languagePreference(preferences.language),
   };
 }

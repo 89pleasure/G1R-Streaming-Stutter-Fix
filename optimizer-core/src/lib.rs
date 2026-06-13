@@ -11,7 +11,10 @@ pub use installer::{
     FilePreview, IniFileContent, InstallOptions, InstallReport, InstallStrategy, ResetReport,
     RestoreReport,
 };
-pub use paths::{detect_config_paths, ConfigCandidate};
+pub use paths::{
+    detect_config_paths, detect_launch_candidates, ConfigCandidate, LaunchCandidate,
+    LaunchCandidateKind, GOTHIC_1_REMAKE_STEAM_APP_ID, GOTHIC_1_REMAKE_STEAM_URI,
+};
 pub use presets::{find_preset, list_presets, Preset};
 pub use recommendation::{recommend_preset_for_hardware, PresetRecommendation};
 
